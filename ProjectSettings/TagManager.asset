@@ -5,18 +5,19 @@ TagManager:
   serializedVersion: 2
   tags:
   - Enemy
+  - Magnet
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Player
   - Water
   - UI
-  - enemy
+  - Enemy
+  - Projectile
+  - Item
+  - Wall
   - background
-  - 
-  - 
-  - 
   - 
   - 
   - 
@@ -42,6 +43,12 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: PlayerVFX
+    uniqueID: 3619214257
+    locked: 0
   - name: background
     uniqueID: 4133315353
+    locked: 0
+  - name: enemy
+    uniqueID: 4120181075
     locked: 0

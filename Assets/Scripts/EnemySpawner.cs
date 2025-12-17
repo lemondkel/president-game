@@ -1,63 +1,84 @@
-ï»¿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class EnemySpawner : MonoBehaviour
 {
-    [Header("Spawn Settings")]
-    public GameObject enemyPrefab;  // ì†Œí™˜í•  ì  í”„ë¦¬íŒ¹
-    public float spawnInterval = 1f; // ì†Œí™˜ ê°„ê²© (ì´ˆ)
-    public float spawnRadius = 10f; // í”Œë ˆì´ì–´ë¡œë¶€í„° ì–¼ë§ˆë‚˜ ë–¨ì–´ì ¸ì„œ ì†Œí™˜ë ì§€ (ë°˜ì§€ë¦„)
+    [Header("Settings")]
+    public Transform playerTarget; // Inspector¿¡¼­ Player ¿ÀºêÁ§Æ®¸¦ µå·¡±× ¾Ø µå·Ó
+    public float spawnRange = 10f; // ÇÃ·¹ÀÌ¾î ÁÖº¯ ¸î ¹ÌÅÍ¿¡¼­ »ı¼ºÇÒÁö
 
-    private Transform playerTransform;
+    // (±âÁ¸ SpawnInfo ¸®½ºÆ®´Â À¯ÁöÇÏµÇ, ¸®½ºÆù ÁÖ±â´Â StageData¸¦ µû¸£°Ô º¯°æ)
+    public GameObject enemyPrefab; // Å×½ºÆ®¿ë ´ÜÀÏ ÇÁ¸®ÆÕ (È¤Àº ¸®½ºÆ® »ç¿ë)
+    public EnemyData baseEnemyData; // ±âº» ½ºÅÈ µ¥ÀÌÅÍ
 
-    // ìƒˆë¡œ ì¶”ê°€: ì ë“¤ì„ ëª¨ì•„ë‘˜ ë¶€ëª¨ ì˜¤ë¸Œì íŠ¸ì˜ Transform
-    private Transform enemyListParent;
+    [Header("Monster Configuration")]
+    // ÇÁ¸®ÆÕ°ú µ¥ÀÌÅÍ¸¦ Â¦Áö¾î¼­ ¸®½ºÆ®·Î °ü¸® (±¸Á¶Ã¼ È°¿ë)
+    public List<SpawnInfo> spawnList = new List<SpawnInfo>();
+
+    [System.Serializable]
+    public struct SpawnInfo
+    {
+        public string name;           // ±¸ºĞ¿ë ÀÌ¸§ (Inspector Ç¥½Ã¿ë)
+        public GameObject prefab;     // ¸ó½ºÅÍ ÇÁ¸®ÆÕ (EnemyBehavior°¡ ºÙ¾îÀÖ¾î¾ß ÇÔ)
+        public EnemyData stats;       // À§¿¡¼­ ¸¸µç ScriptableObject µ¥ÀÌÅÍ
+    }
 
     void Start()
     {
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
+        // °¢ ¸ó½ºÅÍ º°·Î µ¶¸³ÀûÀÎ ÄÚ·çÆ¾(Å¸ÀÌ¸Ó) ½ÇÇà
+        foreach (var info in spawnList)
         {
-            playerTransform = playerObj.transform;
+            StartCoroutine(SpawnRoutine(info));
         }
-
-        // â­ 1. EnemyList ì˜¤ë¸Œì íŠ¸ë¥¼ ì°¾ì•„ Transformì„ í• ë‹¹í•©ë‹ˆë‹¤.
-        GameObject enemyListObj = GameObject.Find("EnemyList");
-        if (enemyListObj != null)
-        {
-            enemyListParent = enemyListObj.transform;
-        }
-
-        StartCoroutine(SpawnEnemyRoutine());
     }
 
-    IEnumerator SpawnEnemyRoutine()
+    IEnumerator SpawnRoutine(SpawnInfo info)
     {
         while (true)
         {
-            // í”Œë ˆì´ì–´ê°€ ì¡´ì¬í•  ë•Œë§Œ ìŠ¤í°
-            if (playerTransform != null)
+            // ½ºÅ×ÀÌÁö ¸Å´ÏÀú°¡ ¾ø°Å³ª, ÇöÀç ½ºÅ×ÀÌÁö µ¥ÀÌÅÍ°¡ ¾øÀ¸¸é ´ë±â
+            if (StageManager.Instance == null || StageManager.Instance.currentStageData == null)
             {
-                SpawnEnemy();
+                yield return null;
+                continue;
             }
 
-            // ì§€ì •ëœ ì‹œê°„ë§Œí¼ ëŒ€ê¸°
-            yield return new WaitForSeconds(spawnInterval);
+            StageData currentStage = StageManager.Instance.currentStageData;
+
+            // 1. ¸ñÇ¥ ¸¶¸®¼ö¸¦ ´Ù »Ì¾ÒÀ¸¸é ½ºÆù ÁßÁö (ÇÃ·¹ÀÌ¾î°¡ ´Ù ÀâÀ» ¶§±îÁö ´ë±â)
+            if (StageManager.Instance.spawnedCount >= currentStage.maxEnemyCount)
+            {
+                yield return null; 
+                continue;
+            }
+
+            // 2. ¸ó½ºÅÍ »ı¼º
+            SpawnEnemy(currentStage);
+
+            // 3. ½ºÅ×ÀÌÁö¿¡ ¼³Á¤µÈ ¼Óµµ¸¸Å­ ´ë±â
+            yield return new WaitForSeconds(currentStage.spawnInterval);
         }
     }
 
-    void SpawnEnemy()
+    void SpawnEnemy(StageData stageEffect)
     {
-        // 1. ëœë¤ ìœ„ì¹˜ ê³„ì‚°
-        Vector2 randomPoint = Random.insideUnitCircle.normalized * spawnRadius;
+        if (playerTarget == null) return;
 
-        // 2. ìµœì¢… ì†Œí™˜ ìœ„ì¹˜ = í”Œë ˆì´ì–´ ìœ„ì¹˜ + ëœë¤ ì˜¤í”„ì…‹
-        Vector3 spawnPosition = playerTransform.position + new Vector3(randomPoint.x, randomPoint.y, 0);
+        // 1. »ı¼º À§Ä¡ °è»ê (ÇÃ·¹ÀÌ¾î ÁÖº¯ ·£´ı ¿øÇü ÁÂÇ¥)
+        Vector2 randomCircle = Random.insideUnitCircle.normalized * spawnRange;
+        Vector3 spawnPos = playerTarget.position + new Vector3(randomCircle.x, randomCircle.y, 0);
 
-        // 3. ì  ìƒì„±
-        // ê¸°ì¡´ ì½”ë“œ: Instantiate(enemyPrefab, spawnPosition, Quaternion.identity);
+        GameObject instance = Instantiate(enemyPrefab, spawnPos, Quaternion.identity, transform);
 
-        // â­ ìˆ˜ì •ëœ ì½”ë“œ: ë¶€ëª¨ Transformì„ ì§€ì •í•©ë‹ˆë‹¤.
-        Instantiate(enemyPrefab, spawnPosition, Quaternion.identity, enemyListParent);
+        // ¡Ú ÇÙ½É: ±âº» µ¥ÀÌÅÍ + ½ºÅ×ÀÌÁö ¹öÇÁ(Multiplier)¸¦ ÇÔ²² Àü´Ş
+        EnemyBehavior behavior = instance.GetComponent<EnemyBehavior>();
+        if (behavior != null)
+        {
+            behavior.Initialize(baseEnemyData, playerTarget, stageEffect);
+        }
+
+        // ½ºÆù Ä«¿îÆ® Áõ°¡
+        StageManager.Instance.spawnedCount++;
     }
 }

@@ -347,7 +347,7 @@ GameObject:
   - component: {fileID: 1886455288696826021}
   - component: {fileID: 1850237614458853245}
   - component: {fileID: 4426936984428380187}
-  - component: {fileID: 6224790105187585408}
+  - component: {fileID: 7183698549896748617}
   - component: {fileID: 4760809059657187250}
   m_Layer: 6
   m_Name: Enemy1
@@ -365,8 +365,8 @@ Transform:
   m_GameObject: {fileID: 6289131692750120387}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 399.99997, y: -199.99998, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 3502794037471150440}
@@ -395,7 +395,7 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 1
+  m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
@@ -408,7 +408,7 @@ BoxCollider2D:
   m_GameObject: {fileID: 6289131692750120387}
   m_Enabled: 1
   m_Density: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: f9bf33691b796b641b3216cd76fbd461, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -444,7 +444,7 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 4.382615, y: 4.6191626}
   m_EdgeRadius: 0
---- !u!114 &6224790105187585408
+--- !u!114 &7183698549896748617
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -453,11 +453,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 6289131692750120387}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3d676930f2a8e7e499bc002cfed6f3b4, type: 3}
+  m_Script: {fileID: 11500000, guid: 2bfab1b1aef131c458249e4c1e807098, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 1.5
-  maxHealth: 2
 --- !u!212 &4760809059657187250
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -496,9 +494,9 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -174786221
+  m_SortingLayer: 2
+  m_SortingOrder: -100
   m_Sprite: {fileID: 21300008, guid: 4e6778132a6814a0da204b5851a5e23f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0

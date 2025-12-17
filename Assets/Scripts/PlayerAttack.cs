@@ -50,13 +50,18 @@ public class PlayerAttack : MonoBehaviour
     void Fire(Transform target)
     {
         // 레벨 가져오기
-        int level = GameManager.instance.currentLevel;
+        int level = GameManager.Instance.level;
+
+        if (GameManager.Instance == null) return;
 
         // 적을 향하는 방향 계산
         Vector2 direction = (target.position - transform.position).normalized;
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f; // 스프라이트가 위쪽이 앞이라고 가정 시 -90
 
-        // === [레벨별 탄환 발사 로직] ===
+
+        SpawnBullet(angle);
+
+        /*// === [레벨별 탄환 발사 로직] ===
 
         // 레벨 1~2: 기본 1발 발사
         if (level < 3)
@@ -75,7 +80,7 @@ public class PlayerAttack : MonoBehaviour
             SpawnBullet(angle - 20f);
             SpawnBullet(angle);
             SpawnBullet(angle + 20f);
-        }
+        }*/
     }
 
     void SpawnBullet(float angle)
