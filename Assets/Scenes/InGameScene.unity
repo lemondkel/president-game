@@ -4925,9 +4925,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 8f1d14829909bf34d9020c90055a7ec6, type: 3}
   - {fileID: 21300000, guid: d4b0268f54ef92a46876bf43ea5b828e, type: 3}
   - {fileID: 21300000, guid: d729ebfd60e8fdc46b96aa3d0bde8c3b, type: 3}
-  - {fileID: 21300000, guid: 80c345fe66094524bbc257076b376db4, type: 3}
-  - {fileID: 21300000, guid: 8692c2134bedca84392a401f56a0a528, type: 3}
-  - {fileID: 21300000, guid: 977b257424a0b43458dd5ec4bf42bb54, type: 3}
   bonusGoldChance: 65
 --- !u!1 &1928952195
 GameObject:

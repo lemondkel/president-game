@@ -32,7 +32,6 @@ public class DroppedItem : MonoBehaviour
 
         // 예: 돈은 노란색, 다이아는 파란색
         if (itemType == ItemType.Gold) spriteRenderer.color = Color.yellow;
-        else if (itemType == ItemType.Diamond) spriteRenderer.color = Color.cyan;
         else spriteRenderer.color = Color.white;
         // 초기화 시 변수 리셋
         isAttracted = false;

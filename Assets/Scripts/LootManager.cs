@@ -8,7 +8,7 @@ public class LootManager : MonoBehaviour
 
     [Header("Resources")]
     public GameObject itemPrefab;
-    public GameObject goldPrefab;   // ★ [추가] 골드 전용 프리팹
+    public GameObject goldPrefab;   // 골드 전용 프리팹
 
     public Transform lootContainer;
 
@@ -46,9 +46,7 @@ public class LootManager : MonoBehaviour
 
     public void SpawnLoot(Vector3 position)
     {
-        // ==========================================
-        // 1. [기존 로직] 테이블 돌려서 메인 아이템 1개 뽑기
-        // ==========================================
+        // 1. 메인 아이템 1개 뽑기
         int randomValue = Random.Range(0, totalWeight);
         int currentSum = 0;
         ItemType selectedType = ItemType.Gold; // 기본값
@@ -63,30 +61,22 @@ public class LootManager : MonoBehaviour
             }
         }
 
-        // 메인 아이템 생성
         CreateItemObject(selectedType, position);
 
-
-        // ==========================================
-        // 2. [추가 로직] 65% 확률로 골드 "보너스" 드랍
-        // ==========================================
+        // 2. 보너스 골드 드랍 (65%)
         if (Random.value <= (bonusGoldChance / 100f))
         {
-            // 위치가 완전히 겹치면 안 예쁘니까 살짝(0.5f) 옆에 떨구기
             Vector3 randomOffset = new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f), 0);
-
-            // 골드 강제 생성
             CreateItemObject(ItemType.Gold, position + randomOffset);
         }
     }
 
-    // ★ 코드 중복을 막기 위해 '생성하는 기능'만 따로 뺐습니다.
+    // ★ [수정됨] 아이템 생성 및 초기화 로직
     void CreateItemObject(ItemType type, Vector3 pos)
     {
-        // 1. 기본은 일반 프리팹
         GameObject prefabToUse = itemPrefab;
 
-        // 2. ★ 골드 타입이면 골드 프리팹으로 교체
+        // 골드면 전용 프리팹 사용
         if (type == ItemType.Gold && goldPrefab != null)
         {
             prefabToUse = goldPrefab;
@@ -95,31 +85,28 @@ public class LootManager : MonoBehaviour
         if (prefabToUse == null) return;
 
         GameObject lootObj = Instantiate(prefabToUse, pos, Quaternion.identity, lootContainer);
-
-        // ★ [추가] 크기가 작다면 여기서 강제로 키우세요!
-        // (1, 1, 1)이 기본 크기이고, 더 크게 하고 싶으면 (1.5f, 1.5f, 1.5f) 등으로 설정
         lootObj.transform.localScale = Vector3.one;
-        // lootObj.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f); // 1.2배
 
+        DroppedItem itemScript = lootObj.GetComponent<DroppedItem>();
 
-        if (!(type == ItemType.Gold && goldPrefab != null))
+        if (itemScript != null)
         {
-            DroppedItem itemScript = lootObj.GetComponent<DroppedItem>();
-            // 골드가 아닌경우
-            if (itemScript != null)
-            {
-                Sprite icon = null;
-                int spriteIndex = (int)type;
+            Sprite icon = null;
 
+            // 골드가 아니면 스프라이트 목록에서 이미지 찾기
+            if (type != ItemType.Gold)
+            {
+                int spriteIndex = (int)type;
                 if (spriteIndex >= 0 && spriteIndex < itemSprites.Count)
                 {
                     icon = itemSprites[spriteIndex];
                 }
-
-                // 초기화
-                itemScript.Initialize(type, icon);
             }
+
+            // ★ [핵심 수정] 골드여도 Initialize를 반드시 호출해야 함!
+            // 그래야 itemScript.type이 ItemType.Gold로 올바르게 설정됨.
+            // icon이 null이면 이미지는 바뀌지 않으므로 골드 프리팹 원본 이미지가 유지됨.
+            itemScript.Initialize(type, icon);
         }
-            
     }
 }

@@ -322,7 +322,7 @@ public class GameManager : MonoBehaviour
             case ItemType.AttackPower: if (PlayerStats.Instance != null) PlayerStats.Instance.AddAttack(1f); break;
             case ItemType.Defense: if (PlayerStats.Instance != null) PlayerStats.Instance.AddDefense(1f); break;
             case ItemType.Gold:
-                long goldAmount = (StageManager.Instance != null) ? (StageManager.Instance.currentStageIndex + 1) + 1 : 10;
+                long goldAmount = (StageManager.Instance != null) ? (StageManager.Instance.currentStageIndex + 1) + 1 : 1;
                 currentGold += goldAmount;
                 if (GameUI.Instance != null) GameUI.Instance.UpdateGoldText(currentGold);
                 break;
