@@ -1,92 +1,92 @@
 using UnityEngine;
 
+// (ï¿½ï¿½ï¿½ï¿½) EnemyBehaviorï¿½ï¿½ ï¿½âº»ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½Û¼ï¿½ï¿½ß½ï¿½ï¿½Ï´ï¿½.
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ EnemyBehaviorï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï½Ã¸ï¿½ ï¿½Ë´Ï´ï¿½.
 public class EnemyBehavior : MonoBehaviour
 {
-    // ·±Å¸ÀÓ¿¡ º¯ÇÏ´Â »óÅÂ°ª
+    [Header("References")]
+    public SpriteRenderer spriteRenderer; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+
+    [Header("Movement")]
+    public float moveSpeed = 2.0f; // ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½Óµï¿½ (ï¿½âº»ï¿½ï¿½)
+
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Å¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     private float currentHp;
-    private Transform targetTransform;
-    private EnemyData data; // ¿øº» µ¥ÀÌÅÍ ÂüÁ¶
-    private Rigidbody2D rb; // ¸®Áöµå¹Ùµğ ÂüÁ¶ Ãß°¡
-    // ³»ºÎ¿¡¼­ ¾µ ½ÇÁ¦ ¹æ¾î·Â º¯¼ö Ãß°¡
+    private float currentDamage;
     private float currentDefense;
 
-    // ¿ÜºÎ(Spawner)¿¡¼­ ÃÊ±âÈ­ÇØÁÖ´Â ÇÔ¼ö
-    public void Initialize(EnemyData baseStats, Transform target, StageData modifier = null)
+    private Transform target;
+    private EnemyData baseData; // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+
+    // ï¿½ï¿½ ï¿½Ê±ï¿½È­ ï¿½Ô¼ï¿½ (Spawnerï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½)
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½(useTint, tintColor)ï¿½ï¿½ ï¿½ß°ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½ï¿½Ï´ï¿½.
+    public void Initialize(EnemyData data, Transform playerTransform, StageData stageInfo, bool useTint, Color tintColor)
     {
-        this.data = baseStats;
-        this.targetTransform = target;
+        target = playerTransform;
+        this.baseData = data;
 
-        float hpMult = 1f;
-        float defMult = 1f;
+        // 1. ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½âº» ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ä¡)
+        currentHp = data.maxHp * stageInfo.hpMultiplier;
+        currentDamage = data.attackPower * stageInfo.damageMultiplier;
+        currentDefense = data.defense * stageInfo.defenseMultiplier;
 
-        // º¸Á¤Ä¡°¡ ÀÖÀ¸¸é Àû¿ë
-        if (modifier != null)
+        // 2. ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        ApplyTintColor(useTint, tintColor);
+
+        // ï¿½ß°ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ê±ï¿½È­ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½: AI ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
+        // ...
+    }
+
+    // ï¿½ï¿½ [ï¿½ß°ï¿½] ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ó¸ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î¸¦ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½
+    private void Update()
+    {
+        if (target != null)
         {
-            hpMult = modifier.hpMultiplier;
-            defMult = modifier.defenseMultiplier;
+            // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+            Vector3 direction = (target.position - transform.position).normalized;
+
+            // ï¿½Ìµï¿½
+            transform.position += direction * moveSpeed * Time.deltaTime;
+
+            // (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î¸¦ ï¿½Ù¶óº¸°ï¿½ ï¿½Ï·ï¿½ï¿½ï¿½ ï¿½Æ·ï¿½ ï¿½Ö¼ï¿½ ï¿½ï¿½ï¿½ï¿½
+            // if (direction.x != 0) spriteRenderer.flipX = direction.x < 0;
         }
-
-        // ÃÖÁ¾ ½ºÅÈ °è»ê (±âº»°ª * ¹èÀ²)
-        // ÁÖÀÇ: data.maxHp¸¦ Á÷Á¢ ¹Ù²Ù¸é ¿øº» ÆÄÀÏÀÌ ¹Ù²î¹Ç·Î, ·ÎÄÃ º¯¼ö currentHp¿¡¸¸ Àû¿ë
-        this.currentHp = baseStats.maxHp * hpMult;
-
-        // ¹æ¾î·Â °°Àº °Ç µû·Î ÀúÀåÇØµÖ¾ß ÇÔ (TakeDamage °è»ê¿ë)
-        // °£´ÜÇÏ°Ô ÇÏ·Á¸é ¿©±â¼­ ÀÓ½Ã º¯¼ö¸¦ Å¬·¡½º ¸â¹ö·Î ½Â°İ½ÃÄÑ¾ß ÇÕ´Ï´Ù.
-        this.currentDefense = baseStats.defense * defMult;
     }
 
-    void Start() // È¤Àº Initialize
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
+    // â˜… [ìˆ˜ì •ë¨] ìì‹  ë° ëª¨ë“  í•˜ìœ„ ìš”ì†Œì˜ SpriteRenderer ìƒ‰ìƒì„ ë³€ê²½í•˜ëŠ” í•¨ìˆ˜
+    private void ApplyTintColor(bool useTint, Color tintColor)
     {
-        rb = GetComponent<Rigidbody2D>();
-    }
+        // ìì‹ ì„ í¬í•¨í•œ ëª¨ë“  ìì‹ ì˜¤ë¸Œì íŠ¸ì—ì„œ SpriteRenderer ì»´í¬ë„ŒíŠ¸ë“¤ì„ ì°¾ìŠµë‹ˆë‹¤.
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>();
 
-    // Update ´ë½Å FixedUpdate »ç¿ë (¹°¸® ¿¬»êÀº FixedUpdate°¡ ±¹·ê)
-    void FixedUpdate()
-    {
-        if (targetTransform == null) return;
-
-        // 1. ¹æÇâ ±¸ÇÏ±â
-        Vector2 direction = (targetTransform.position - transform.position).normalized;
-
-        // 2. ¹°¸® ÀÌµ¿ (MovePosition)
-        // ÇöÀç À§Ä¡¿¡¼­ ´ÙÀ½ ÇÁ·¹ÀÓ À§Ä¡¸¦ °è»êÇØ¼­ ¿äÃ»ÇÔ
-        Vector2 nextPos = rb.position + (direction * data.moveSpeed * Time.fixedDeltaTime);
-        rb.MovePosition(nextPos);
-    }
-
-    private void MoveTowardsTarget()
-    {
-        // 1. ¹æÇâ º¤ÅÍ ±¸ÇÏ±â (Target - Me)
-        Vector2 direction = (targetTransform.position - transform.position).normalized;
-
-        // 2. ÀÌµ¿ (µ¥ÀÌÅÍ¿¡ ÀÖ´Â moveSpeed »ç¿ë)
-        // ¸®Áöµå¹Ùµğ¸¦ ¾´´Ù¸é MovePositionÀ» ½á¾ß ÇÏÁö¸¸, °£´ÜÇÑ ÀÌµ¿Àº Translate·Î ÃæºĞ
-        transform.Translate(direction * data.moveSpeed * Time.deltaTime);
-
-        // *Âü°í: ¸¸¾à ÀûÀÌ ¼­·Î °ãÄ¡Áö ¾Ê°Ô ÇÏ·Á¸é Rigidbody2D(Dynamic) + Collider Ãß°¡ ÇÊ¿ä
-    }
-
-    // ¿¹½Ã: µ¥¹ÌÁö ¹Ş´Â ÇÔ¼ö
-    public void TakeDamage(float damage)
-    {
-        // [±âÁ¸ ÄÚµå] 
-        // float finalDamage = Mathf.Max(1, damage - data.defense); // ¹«Á¶°Ç 1ÀÌ µé¾î°¨
-
-        // [¼öÁ¤ ÄÚµå]
-        // ¹æ¾î·ÂÀ» »« °ªÀ» °è»êÇÏµÇ, 0º¸´Ù ÀÛ¾ÆÁö¸é(À½¼ö¸é ÈúÀÌ µÇ´Ï±î) 0À¸·Î °íÁ¤
-        float finalDamage = Mathf.Max(0, damage - currentDefense);
-
-        // µ¥¹ÌÁö°¡ 0ÀÌ¸é ¾Æ¹« ÀÏµµ ¾È ÀÏ¾î³² (·Î±× È®ÀÎ¿ë)
-        if (finalDamage <= 0)
+        if (renderers == null || renderers.Length == 0)
         {
-            Debug.Log($"[Defense] ¹æ¾îÇÔ! (Dmg: {damage} - Def: {data.defense} = 0)");
+            // Debug.LogWarning($"{gameObject.name}: í•˜ìœ„ ìš”ì†Œì—ì„œ SpriteRendererë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
-        currentHp -= finalDamage;
+        foreach (SpriteRenderer renderer in renderers)
+        {
+            if (useTint)
+            {
+                // ì„¤ì •ëœ ìƒ‰ìƒ(ì•ŒíŒŒê°’ í¬í•¨) ì ìš©
+                renderer.color = tintColor;
+            }
+            else
+            {
+                // ìƒ‰ìƒì„ ì‚¬ìš©í•˜ì§€ ì•Šìœ¼ë©´ ê¸°ë³¸ í°ìƒ‰(ì›ë³¸)ìœ¼ë¡œ ë³µêµ¬
+                renderer.color = Color.white;
+            }
+        }
+    }
 
-        // ·Î±×·Î ÇöÀç Ã¼·Â È®ÀÎ
-        Debug.Log($"[Hit] ³²Àº Ã¼·Â: {currentHp} / {data.maxHp} (¹ŞÀº ÇÇÇØ: {finalDamage})");
+    // (ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½ ï¿½Ç°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½
+    public void TakeDamage(float damage)
+    {
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+        float finalDamage = Mathf.Max(1, damage - currentDefense);
+        currentHp -= finalDamage;
 
         if (currentHp <= 0)
         {
@@ -94,30 +94,28 @@ public class EnemyBehavior : MonoBehaviour
         }
     }
 
-    // EnemyBehavior Å¬·¡½º ³»ºÎÀÇ Die ÇÔ¼ö ¼öÁ¤
-
     private void Die()
-    {
-        // 1. [´©¶ô ÀÇ½É] °æÇèÄ¡ Áö±Ş (ÀÌ ÁÙÀÌ ¾ø¾î¼­ °æÇèÄ¡°¡ ¾È ¿Ã¶úÀ» °Ì´Ï´Ù)
-        if (GameManager.Instance != null)
         {
-            // data´Â EnemyData ½ºÅ©¸³ÅÍºí ¿ÀºêÁ§Æ®
-            GameManager.Instance.AddExp(data.expReward);
-        }
+            // 1. [ï¿½ï¿½ï¿½ï¿½ ï¿½Ç½ï¿½] ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½î¼­ ï¿½ï¿½ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã¶ï¿½ï¿½ï¿½ ï¿½Ì´Ï´ï¿½)
+            if (GameManager.Instance != null)
+            {
+                // dataï¿½ï¿½ EnemyData ï¿½ï¿½Å©ï¿½ï¿½ï¿½Íºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
+                GameManager.Instance.AddExp(baseData.expReward);
+            }
 
-        // 2. ¾ÆÀÌÅÛ µå¶ø (¾Æ±î Ãß°¡ÇÑ ·ÎÁ÷)
-        if (LootManager.Instance != null)
-        {
-            LootManager.Instance.SpawnLoot(transform.position);
-        }
+            // 2. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (ï¿½Æ±ï¿½ ï¿½ß°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+            if (LootManager.Instance != null)
+            {
+                LootManager.Instance.SpawnLoot(transform.position);
+            }
 
-        // 3. ½ºÅ×ÀÌÁö Å³ Ä«¿îÆ® Áı°è
-        if (StageManager.Instance != null)
-        {
-            StageManager.Instance.OnEnemyKilled();
-        }
+            // 3. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Å³ Ä«ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
+            if (StageManager.Instance != null)
+            {
+                StageManager.Instance.OnEnemyKilled();
+            }
 
-        // 4. »èÁ¦
-        Destroy(gameObject);
-    }
+            // 4. ï¿½ï¿½ï¿½ï¿½
+            Destroy(gameObject);
+        }
 }

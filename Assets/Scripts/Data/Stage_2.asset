@@ -14,8 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageNumber: 2
   stageName: 
-  maxEnemyCount: 4
+  maxEnemyCount: 100
   spawnInterval: 0.4
   hpMultiplier: 2
   damageMultiplier: 2
   defenseMultiplier: 1
+  enemyList:
+  - name: "\uC18C"
+    prefab: {fileID: 6289131692750120387, guid: c13a2f0f57ec56d42b4bc114a3657795,
+      type: 3}
+    data: {fileID: 11400000, guid: 1022ed62ff4c79e4ba92d2e16b9d9f7f, type: 2}
+    useTintColor: 1
+    tintColor: {r: 0.9061289, g: 1, b: 0, a: 1}

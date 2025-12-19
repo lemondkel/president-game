@@ -5,39 +5,20 @@ using UnityEngine;
 public class EnemySpawner : MonoBehaviour
 {
     [Header("Settings")]
-    public Transform playerTarget; // Inspector에서 Player 오브젝트를 드래그 앤 드롭
-    public float spawnRange = 10f; // 플레이어 주변 몇 미터에서 생성할지
-
-    // (기존 SpawnInfo 리스트는 유지하되, 리스폰 주기는 StageData를 따르게 변경)
-    public GameObject enemyPrefab; // 테스트용 단일 프리팹 (혹은 리스트 사용)
-    public EnemyData baseEnemyData; // 기본 스탯 데이터
-
-    [Header("Monster Configuration")]
-    // 프리팹과 데이터를 짝지어서 리스트로 관리 (구조체 활용)
-    public List<SpawnInfo> spawnList = new List<SpawnInfo>();
-
-    [System.Serializable]
-    public struct SpawnInfo
-    {
-        public string name;           // 구분용 이름 (Inspector 표시용)
-        public GameObject prefab;     // 몬스터 프리팹 (EnemyBehavior가 붙어있어야 함)
-        public EnemyData stats;       // 위에서 만든 ScriptableObject 데이터
-    }
+    public Transform playerTarget; // 플레이어 참조
+    public float spawnRange = 10f; // 스폰 반경
 
     void Start()
     {
-        // 각 몬스터 별로 독립적인 코루틴(타이머) 실행
-        foreach (var info in spawnList)
-        {
-            StartCoroutine(SpawnRoutine(info));
-        }
+        // 단일 스폰 루틴 시작
+        StartCoroutine(SpawnRoutine());
     }
 
-    IEnumerator SpawnRoutine(SpawnInfo info)
+    IEnumerator SpawnRoutine()
     {
         while (true)
         {
-            // 스테이지 매니저가 없거나, 현재 스테이지 데이터가 없으면 대기
+            // 1. 매니저나 데이터가 준비 안 됐으면 대기
             if (StageManager.Instance == null || StageManager.Instance.currentStageData == null)
             {
                 yield return null;
@@ -46,39 +27,56 @@ public class EnemySpawner : MonoBehaviour
 
             StageData currentStage = StageManager.Instance.currentStageData;
 
-            // 1. 목표 마리수를 다 뽑았으면 스폰 중지 (플레이어가 다 잡을 때까지 대기)
-            if (StageManager.Instance.spawnedCount >= currentStage.maxEnemyCount)
+            // 2. 이 스테이지에 등록된 몬스터가 하나도 없으면 대기 (에러 방지)
+            if (currentStage.enemyList == null || currentStage.enemyList.Count == 0)
             {
-                yield return null; 
+                // Debug.LogWarning("이 스테이지에 등록된 몬스터가 없습니다!");
+                yield return new WaitForSeconds(1.0f);
                 continue;
             }
 
-            // 2. 몬스터 생성
-            SpawnEnemy(currentStage);
+            // 3. 목표 마리수를 다 채웠으면 대기
+            // (spawnedCount는 StageManager가 관리)
+            if (StageManager.Instance.spawnedCount >= currentStage.maxEnemyCount)
+            {
+                yield return null;
+                continue;
+            }
 
-            // 3. 스테이지에 설정된 속도만큼 대기
+            // 4. 몬스터 소환
+            SpawnRandomEnemy(currentStage);
+
+            // 5. 스테이지 설정된 주기만큼 대기
             yield return new WaitForSeconds(currentStage.spawnInterval);
         }
     }
 
-    void SpawnEnemy(StageData stageEffect)
+    void SpawnRandomEnemy(StageData stageData)
     {
         if (playerTarget == null) return;
 
-        // 1. 생성 위치 계산 (플레이어 주변 랜덤 원형 좌표)
+        // 1. 위치 계산
         Vector2 randomCircle = Random.insideUnitCircle.normalized * spawnRange;
         Vector3 spawnPos = playerTarget.position + new Vector3(randomCircle.x, randomCircle.y, 0);
 
-        GameObject instance = Instantiate(enemyPrefab, spawnPos, Quaternion.identity, transform);
+        // 2. 스테이지에 등록된 적 목록 중 하나를 랜덤 선택
+        int randomIndex = Random.Range(0, stageData.enemyList.Count);
+        StageData.StageEnemyEntry selectedEnemy = stageData.enemyList[randomIndex];
 
-        // ★ 핵심: 기본 데이터 + 스테이지 버프(Multiplier)를 함께 전달
+        if (selectedEnemy.prefab == null) return;
+
+        // 3. 생성
+        GameObject instance = Instantiate(selectedEnemy.prefab, spawnPos, Quaternion.identity, transform);
+
+        // 4. 초기화 (선택된 몬스터의 Data + 현재 스테이지의 보정치 + ★ 색상 정보)
         EnemyBehavior behavior = instance.GetComponent<EnemyBehavior>();
         if (behavior != null)
         {
-            behavior.Initialize(baseEnemyData, playerTarget, stageEffect);
+            // 프리팹과 짝지어진 EnemyData 및 스테이지 정보, 그리고 색상 정보를 함께 전달
+            behavior.Initialize(selectedEnemy.data, playerTarget, stageData, selectedEnemy.useTintColor, selectedEnemy.tintColor);
         }
 
-        // 스폰 카운트 증가
+        // 5. 카운트 증가
         StageManager.Instance.spawnedCount++;
     }
 }

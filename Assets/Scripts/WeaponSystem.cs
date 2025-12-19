@@ -91,7 +91,7 @@ public class WeaponSystem : MonoBehaviour
         Projectile projScript = bullet.GetComponent<Projectile>();
         if (projScript != null)
         {
-            projScript.Initialize(direction, damage, speed);
+            projScript.Initialize(direction, speed);
         }
     }
 

@@ -21,7 +21,7 @@ public class MagicWand : AbilityBase
         Vector3 dir = (target.position - transform.position).normalized;
 
         // 투사체 초기화 (부모의 GetCurrentDamage() 사용)
-        obj.GetComponent<Projectile>().Initialize(dir, GetCurrentDamage(), 15f);
+        obj.GetComponent<Projectile>().Initialize(dir, 15f);
 
         // 회전
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
