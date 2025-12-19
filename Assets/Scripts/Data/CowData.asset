@@ -15,5 +15,6 @@ MonoBehaviour:
   maxHp: 1
   attackPower: 1
   defense: 0
-  moveSpeed: 1
+  moveSpeed: 1.2
+  expReward: 1
   spawnInterval: 1

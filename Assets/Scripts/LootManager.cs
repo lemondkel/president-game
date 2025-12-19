@@ -22,18 +22,16 @@ public class LootManager : MonoBehaviour
     private Dictionary<ItemType, int> dropTable = new Dictionary<ItemType, int>()
     {
         { ItemType.AttackPower, 5 },
-        { ItemType.Resurrection, 5 },
+        { ItemType.NuckBack, 5 },
         { ItemType.Defense, 5 },
         { ItemType.Gold, 23 },
         { ItemType.Diamond, 23 },
         { ItemType.AttackSpeed, 5 },
         { ItemType.HpRegen, 5 },
-        { ItemType.SkillCooldown, 5 },
+        { ItemType.SkillCooldown, 12 },
         { ItemType.MoveSpeed, 5 },
         { ItemType.CritRate, 5 },
         { ItemType.LifeSteal, 5 },
-        { ItemType.TagCooldown, 2 },
-        { ItemType.Magnet, 5 },
         { ItemType.SkillDamage, 1 },
         { ItemType.MaxHp, 1 }
     };

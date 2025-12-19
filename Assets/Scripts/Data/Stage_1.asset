@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageNumber: 1
   stageName: 
-  maxEnemyCount: 100
+  maxEnemyCount: 2
   spawnInterval: 0.4
   hpMultiplier: 1
   damageMultiplier: 1
