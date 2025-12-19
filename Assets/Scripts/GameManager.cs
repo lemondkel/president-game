@@ -13,8 +13,7 @@ public class GameManager : MonoBehaviour
     public int charId = 1001; // 기본 캐릭터 ID
 
     [Header("Server Config")]
-    // ★ 실제 배포 시에는 서버 IP로 변경 필요 (예: http://192.168.0.10:3000)
-    private string baseUrl = "http://localhost:3000";
+    private string baseUrl = "http://112.169.189.87:3000";
     private string gainExpUrl => $"{baseUrl}/api/character/gain-exp";
     private string loadDataUrl => $"{baseUrl}/getUserData";
 
@@ -25,27 +24,23 @@ public class GameManager : MonoBehaviour
     [Header("Player Status")]
     public int level = 1;
     public int currentExp = 0;
-    public int maxExp = 100; // 초기값 (서버 데이터 로드 시 덮어씌워짐)
+    public int maxExp = 1;
     public long currentGold = 0;
     public long currentDiamond = 0;
+    public long currentStageNumber = 1;
 
-    // 이번 스테이지에서 획득한 누적 경험치 (저장 전 임시 보관)
     private int accumulatedExpInStage = 0;
 
     public bool isPlayerDead = false;
 
-    // 외부에서 구독할 이벤트
-    public event Action<int, int> OnExpChange; // (currentExp, maxExp)
-    public event Action<int> OnLevelUp;        // (newLevel)
+    public event Action<int, int> OnExpChange;
+    public event Action<int> OnLevelUp;
 
     [Header("References")]
     public Transform playerTransform;
     public GameObject levelUpVfxPrefab;
     public GameObject player;
 
-    // ==========================================
-    // DTO (Data Transfer Object) 클래스 정의
-    // ==========================================
     [Serializable]
     public class ServerResponse
     {
@@ -57,18 +52,13 @@ public class GameManager : MonoBehaviour
     [Serializable]
     public class UserCharData
     {
-        // User Info
         public long gold;
         public long diamond;
         public int selectedCharId;
-
-        // Character Info
         public int level;
         public int currentExp;
         public int maxExp;
         public int stageNumber;
-
-        // Stats
         public float attack;
         public float defense;
         public float currentHp;
@@ -86,19 +76,11 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         Application.targetFrameRate = 60;
-
-        // 싱글톤 패턴 설정
         if (Instance == null)
         {
             Instance = this;
             audioSource = GetComponent<AudioSource>();
-
-            // UUID 생성/할당 (기기 고유 ID 사용)
-            // 에디터 테스트 시 매번 바뀌는 것을 방지하려면 PlayerPrefs 사용 권장
-            // 여기서는 SystemInfo.deviceUniqueIdentifier를 그대로 사용
             uuid = SystemInfo.deviceUniqueIdentifier;
-
-            Debug.Log($"[GameManager] Init UUID: {uuid}");
         }
         else
         {
@@ -108,17 +90,12 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // 게임 시작 시 서버에서 데이터 로드 (Login 개념)
         StartCoroutine(Co_LoadGameData());
     }
 
-    // ==========================================
-    // 1. 데이터 로드 (Load)
-    // ==========================================
     IEnumerator Co_LoadGameData()
     {
-        Debug.Log($"[Load] 데이터 불러오기 시도... (UUID: {uuid})");
-
+        Debug.Log($"[Load] 데이터 불러오기... (UUID: {uuid})");
         WWWForm form = new WWWForm();
         form.AddField("uuid", uuid);
         form.AddField("charId", charId);
@@ -129,57 +106,59 @@ public class GameManager : MonoBehaviour
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-                string json = www.downloadHandler.text;
-                Debug.Log($"[Load] 서버 응답: {json}");
-
+				string json = www.downloadHandler.text;
+				Debug.Log($"[Load] 서버 응답: {json}");
                 try
                 {
                     ServerResponse response = JsonUtility.FromJson<ServerResponse>(json);
                     if (response != null && response.result && response.@params != null)
                     {
-                        // 서버 데이터로 게임 상태 동기화
                         ApplyServerData(response.@params);
                     }
                     else
                     {
-                        Debug.LogWarning("[Load] 서버 응답은 성공했으나 데이터가 유효하지 않습니다. (신규 유저)");
-                        UpdateAllUI(); // 기본값으로 UI 갱신
+                        Debug.LogWarning("신규 유저 혹은 데이터 없음");
+                        UpdateAllUI();
                     }
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[Load] JSON 파싱 에러: {e.Message}");
+                    Debug.LogError($"JSON 파싱 에러: {e.Message}");
                     UpdateAllUI();
                 }
             }
             else
             {
-                Debug.LogError($"[Load] 통신 실패: {www.error}. 로컬 기본값으로 시작합니다.");
+                Debug.LogError($"통신 실패: {www.error}");
                 UpdateAllUI();
             }
         }
     }
 
-    // 서버 데이터를 각 시스템에 분배
+    // ★ [핵심] 서버 데이터 적용 로직
     void ApplyServerData(UserCharData data)
     {
-        // 1. GameManager 상태 갱신
+        // 1. 변수 갱신
         this.level = data.level;
         this.currentExp = data.currentExp;
+        this.currentStageNumber = data.stageNumber;
+        StageClearUI.Instance.ShowClearSequence(data.stageNumber - 1);
         this.maxExp = data.maxExp;
         this.currentGold = data.gold;
         this.currentDiamond = data.diamond;
         this.charId = data.selectedCharId;
 
-        // 2. StageManager 갱신
+        // 2. StageManager 갱신 및 ★스테이지 로드 호출★
         if (StageManager.Instance != null)
         {
-            // 서버 저장은 1부터, 배열 인덱스는 0부터이므로 -1 처리
             int stageIndex = Mathf.Max(0, data.stageNumber - 1);
             StageManager.Instance.currentStageIndex = stageIndex;
+            StageManager.Instance.LoadStage(stageIndex);
+
+            Debug.Log($"[GameManager] 스테이지 로드 요청: {data.stageNumber} (Index: {stageIndex})");
         }
 
-        // 3. PlayerStats (전투 능력치) 갱신
+        // 3. PlayerStats 갱신
         if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.attack = data.attack;
@@ -194,27 +173,22 @@ public class GameManager : MonoBehaviour
             PlayerStats.Instance.knockbackChance = data.knockbackChance;
         }
 
-        // 4. 플레이어 오브젝트 (체력 시스템) 갱신
+        // 4. 체력 갱신
         if (player != null)
         {
             var hpComp = player.GetComponent<HealthSystemComponent>();
             if (hpComp != null)
             {
                 var hs = hpComp.GetHealthSystem();
-                hpComp.SetLevel(this.level);
-
-                hs.SetHealthMax(data.maxHp, false);
-                hs.SetHealth(data.currentHp); // 저장된 현재 체력 적용
+                hpComp.SetLevel(this.level); // 레벨 먼저
+                hs.SetHealthMax(data.maxHp, false); // 최대 체력
+                hs.SetHealth(data.currentHp); // 현재 체력
             }
         }
-
-        Debug.Log("[GameManager] 모든 데이터 동기화 완료.");
         UpdateAllUI();
+        StageManager.Instance.UpdateRemainUI();
     }
 
-    // ==========================================
-    // 2. UI 관리
-    // ==========================================
     public void UpdateAllUI()
     {
         if (GameUI.Instance != null)
@@ -222,6 +196,7 @@ public class GameManager : MonoBehaviour
             GameUI.Instance.UpdateExpUI(currentExp, maxExp, level);
             GameUI.Instance.UpdateGoldText(currentGold);
             GameUI.Instance.UpdateDiamondText(currentDiamond);
+            GameUI.Instance.UpdateStageText(currentStageNumber);
         }
         NotifyExpChange();
     }
@@ -235,54 +210,33 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // ==========================================
-    // 3. 경험치 및 레벨업 로직 (로컬 처리)
-    // ==========================================
     public void AddExp(int amount)
     {
         if (isPlayerDead) return;
-
-        // 저장용 변수에 누적
         accumulatedExpInStage += amount;
-
-        // 로컬 변수 즉시 반영
         currentExp += amount;
-
-        // 레벨업 체크
         CheckLocalLevelUp();
-
-        // UI 갱신
         NotifyExpChange();
     }
 
     private void CheckLocalLevelUp()
     {
-        // 경험치가 maxExp를 초과하면 레벨업 (여러 번 레벨업 가능성 고려)
         while (currentExp >= maxExp)
         {
             currentExp -= maxExp;
             level++;
-
-            // ★ 중요: 서버 로직과 동일하게 유지해야 함
             maxExp *= 2;
-
             PerformLevelUpEffect();
         }
     }
 
     private void PerformLevelUpEffect()
     {
-        Debug.Log($"Local Level Up! Lv.{level}");
-
         if (player != null)
         {
             var hpComp = player.GetComponent<HealthSystemComponent>();
-            if (hpComp != null)
-            {
-                hpComp.SetLevel(level);
-            }
+            if (hpComp != null) hpComp.SetLevel(level);
         }
-
         PlayLevelUpEffect();
         OnLevelUp?.Invoke(level);
     }
@@ -291,26 +245,14 @@ public class GameManager : MonoBehaviour
     {
         if (levelUpVfxPrefab != null && playerTransform != null)
         {
-            // VFX 생성 및 플레이어 자식으로 설정
             GameObject vfx = Instantiate(levelUpVfxPrefab, playerTransform.position, Quaternion.identity);
             vfx.transform.SetParent(playerTransform);
         }
     }
 
-    // ==========================================
-    // 4. 데이터 저장 (Save - 스테이지 클리어 시)
-    // ==========================================
     public void SaveStageData()
     {
-        // 누적된 경험치가 없어도 스테이지 진행도 저장을 위해 호출될 수 있으므로
-        // 경험치 0이어도 저장은 수행하도록 조건 완화 가능. 
-        // 일단은 경험치가 있을 때만 저장하는 것으로 유지.
-        if (accumulatedExpInStage <= 0)
-        {
-            // 경험치는 없어도 다른 스탯 변동이 있을 수 있으니 저장 프로세스는 타는게 안전할 수 있음
-            // 여기서는 일단 진행
-        }
-
+        if (accumulatedExpInStage <= 0) { }
         StartCoroutine(Co_RequestSaveStageData(accumulatedExpInStage));
     }
 
@@ -321,7 +263,6 @@ public class GameManager : MonoBehaviour
         form.AddField("charId", charId);
         form.AddField("gainedExp", amount);
 
-        // ★ 현재 상태 스냅샷 전송 (DB 덮어쓰기용)
         form.AddField("level", level);
         form.AddField("currentExp", currentExp);
         form.AddField("maxExp", maxExp);
@@ -329,11 +270,8 @@ public class GameManager : MonoBehaviour
         form.AddField("diamond", currentDiamond.ToString());
 
         if (StageManager.Instance != null)
-        {
             form.AddField("stageNumber", StageManager.Instance.currentStageIndex + 1);
-        }
 
-        // PlayerStats의 값 수집
         if (PlayerStats.Instance != null)
         {
             form.AddField("attack", PlayerStats.Instance.attack.ToString());
@@ -348,7 +286,6 @@ public class GameManager : MonoBehaviour
             form.AddField("knockbackChance", PlayerStats.Instance.knockbackChance.ToString());
         }
 
-        // 체력 정보 수집
         if (player != null)
         {
             var hpComp = player.GetComponent<HealthSystemComponent>();
@@ -363,31 +300,17 @@ public class GameManager : MonoBehaviour
         using (UnityWebRequest www = UnityWebRequest.Post(gainExpUrl, form))
         {
             yield return www.SendWebRequest();
-
             if (www.result == UnityWebRequest.Result.Success)
             {
-                // 응답 처리
-                ServerResponse response = JsonUtility.FromJson<ServerResponse>(www.downloadHandler.text);
-                if (response != null && response.result)
-                {
-                    // 저장 성공 시 누적 경험치 초기화
-                    accumulatedExpInStage = 0;
-                    Debug.Log("데이터 저장 완료 (Saved)");
-                }
+                accumulatedExpInStage = 0;
+                Debug.Log("데이터 저장 완료 (Saved)");
             }
-            else
-            {
-                Debug.LogError($"데이터 저장 실패: {www.error}");
-            }
+            else Debug.LogError($"저장 실패: {www.error}");
         }
     }
 
-    // ==========================================
-    // 5. 아이템 효과 적용
-    // ==========================================
     public void ApplyItemEffect(ItemType type)
     {
-        // 효과음 재생
         if (audioSource != null && itemPickupClip != null)
         {
             audioSource.pitch = UnityEngine.Random.Range(0.95f, 1.05f);
@@ -396,14 +319,9 @@ public class GameManager : MonoBehaviour
 
         switch (type)
         {
-            case ItemType.AttackPower:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.AddAttack(1f);
-                break;
-            case ItemType.Defense:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.AddDefense(1f);
-                break;
+            case ItemType.AttackPower: if (PlayerStats.Instance != null) PlayerStats.Instance.AddAttack(1f); break;
+            case ItemType.Defense: if (PlayerStats.Instance != null) PlayerStats.Instance.AddDefense(1f); break;
             case ItemType.Gold:
-                // 스테이지 인덱스 + 1 + 1 (기획에 따른 공식)
                 long goldAmount = (StageManager.Instance != null) ? (StageManager.Instance.currentStageIndex + 1) + 1 : 10;
                 currentGold += goldAmount;
                 if (GameUI.Instance != null) GameUI.Instance.UpdateGoldText(currentGold);
@@ -412,42 +330,21 @@ public class GameManager : MonoBehaviour
                 currentDiamond += 1;
                 if (GameUI.Instance != null) GameUI.Instance.UpdateDiamondText(currentDiamond);
                 break;
-            case ItemType.AttackSpeed:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.attackSpeed += 1;
-                break;
-            case ItemType.CritRate:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.critRate += 1;
-                break;
-            case ItemType.HpRegen:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.hpRegen += 1;
-                break;
-            case ItemType.LifeSteal:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.lifeSteal += 1;
-                break;
+            case ItemType.AttackSpeed: if (PlayerStats.Instance != null) PlayerStats.Instance.attackSpeed += 1; break;
+            case ItemType.CritRate: if (PlayerStats.Instance != null) PlayerStats.Instance.critRate += 1; break;
+            case ItemType.HpRegen: if (PlayerStats.Instance != null) PlayerStats.Instance.hpRegen += 1; break;
+            case ItemType.LifeSteal: if (PlayerStats.Instance != null) PlayerStats.Instance.lifeSteal += 1; break;
             case ItemType.MaxHp:
                 if (PlayerStats.Instance != null && player != null)
                 {
                     var hpComp = player.GetComponent<HealthSystemComponent>();
-                    if (hpComp != null)
-                    {
-                        var healthSystem = hpComp.GetHealthSystem();
-                        healthSystem.SetHealthMax(healthSystem.GetHealthMax() + 1, false);
-                        // 최대 체력이 늘어나면 현재 체력 비율 조정 혹은 그대로 유지
-                    }
+                    if (hpComp != null) hpComp.GetHealthSystem().SetHealthMax(hpComp.GetHealthSystem().GetHealthMax() + 1, false);
                 }
                 break;
-            case ItemType.MoveSpeed:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.moveSpeed += 1;
-                break;
-            case ItemType.NuckBack:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.knockbackChance += 1;
-                break;
-            case ItemType.SkillCooldown:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.cooldownReduction += 1;
-                break;
-            case ItemType.SkillDamage:
-                if (PlayerStats.Instance != null) PlayerStats.Instance.skillDamage += 1;
-                break;
+            case ItemType.MoveSpeed: if (PlayerStats.Instance != null) PlayerStats.Instance.moveSpeed += 1; break;
+            case ItemType.NuckBack: if (PlayerStats.Instance != null) PlayerStats.Instance.knockbackChance += 1; break;
+            case ItemType.SkillCooldown: if (PlayerStats.Instance != null) PlayerStats.Instance.cooldownReduction += 1; break;
+            case ItemType.SkillDamage: if (PlayerStats.Instance != null) PlayerStats.Instance.skillDamage += 1; break;
         }
     }
 }

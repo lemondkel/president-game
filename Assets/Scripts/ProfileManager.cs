@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using UnityEngine.Networking;
+using TMPro;
 using CodeMonkey.HealthSystemCM;
 
 public class ProfileManager : MonoBehaviour
@@ -14,7 +15,7 @@ public class ProfileManager : MonoBehaviour
 
     [Header("Server Config")]
     // ★ 실제 배포 시에는 서버 IP로 변경 필요 (예: http://192.168.0.10:3000)
-    private string baseUrl = "http://localhost:3000";
+    private string baseUrl = "http://112.169.189.87:3000";
     private string saveUserInfoUrl => $"{baseUrl}/api/user/save-info";
     private string loadDataUrl => $"{baseUrl}/getUserData";
 
@@ -30,14 +31,19 @@ public class ProfileManager : MonoBehaviour
 
     public bool isPlayerDead = false;
 
-    // 외부에서 구독할 이벤트
-    public event Action<int, int> OnExpChange; // (currentExp, maxExp)
-    public event Action<int> OnLevelUp;        // (newLevel)
+    [Header("캐릭터 정보")]
+    public TextMeshProUGUI hpInput;
+    public TextMeshProUGUI defenseInput;
+    public TextMeshProUGUI hpRatioInput;
+    public TextMeshProUGUI attackInput;
+    public TextMeshProUGUI skillReduceInput;
+    public TextMeshProUGUI speedInput;
+    public TextMeshProUGUI criticalInput;
+    public TextMeshProUGUI lifeStealInput;
 
-    [Header("References")]
-    public Transform playerTransform;
-    public GameObject levelUpVfxPrefab;
-    public GameObject player;
+    public TextMeshProUGUI nickInput;
+    public TextMeshProUGUI stageInput;
+    public TextMeshProUGUI levelInput;
 
     // ==========================================
     // DTO (Data Transfer Object) 클래스 정의
@@ -57,6 +63,7 @@ public class ProfileManager : MonoBehaviour
         public long gold;
         public long diamond;
         public int selectedCharId;
+        public string nickname;
 
         // Character Info
         public int level;
@@ -138,19 +145,16 @@ public class ProfileManager : MonoBehaviour
                     else
                     {
                         Debug.LogWarning("[Load] 서버 응답은 성공했으나 데이터가 유효하지 않습니다. (신규 유저)");
-                        UpdateAllUI(); // 기본값으로 UI 갱신
                     }
                 }
                 catch (Exception e)
                 {
                     Debug.LogError($"[Load] JSON 파싱 에러: {e.Message}");
-                    UpdateAllUI();
                 }
             }
             else
             {
                 Debug.LogError($"[Load] 통신 실패: {www.error}. 로컬 기본값으로 시작합니다.");
-                UpdateAllUI();
             }
         }
     }
@@ -189,45 +193,20 @@ public class ProfileManager : MonoBehaviour
             PlayerStats.Instance.knockbackChance = data.knockbackChance;
         }
 
-        // 4. 플레이어 오브젝트 (체력 시스템) 갱신
-        if (player != null)
-        {
-            var hpComp = player.GetComponent<HealthSystemComponent>();
-            if (hpComp != null)
-            {
-                var hs = hpComp.GetHealthSystem();
-                hpComp.SetLevel(this.level);
+        hpInput.text = "체력: " + data.maxHp.ToString("0");
+        defenseInput.text = "방어력: " + data.defense.ToString("0");
+        attackInput.text = "공격력: " + data.attack.ToString("0");
+        speedInput.text = "이동 속도: " + data.moveSpeed.ToString("0") + "%";
+        hpRatioInput.text = "체력 재생률: " + data.hpRegen.ToString("0") + "%";
+        skillReduceInput.text = "스킬 쿨타임: " + data.cooldownReduction.ToString("0") + "%";
+        criticalInput.text = "치명타: " + data.critRate.ToString("0") + "%";
+        lifeStealInput.text = "생명력 흡수: " + data.lifeSteal.ToString("0") + "%";
 
-                hs.SetHealthMax(data.maxHp, false);
-                hs.SetHealth(data.currentHp); // 저장된 현재 체력 적용
-            }
-        }
+        nickInput.text = data.nickname;
+        stageInput.text = "Stage " + data.stageNumber.ToString("0");
+        levelInput.text = "Lv." + data.level.ToString("0");
 
-        Debug.Log("[ProfileManager] 모든 데이터 동기화 완료.");
-        UpdateAllUI();
-    }
-
-    // ==========================================
-    // 2. UI 관리
-    // ==========================================
-    public void UpdateAllUI()
-    {
-        if (GameUI.Instance != null)
-        {
-            GameUI.Instance.UpdateExpUI(currentExp, maxExp, level);
-            GameUI.Instance.UpdateGoldText(currentGold);
-            GameUI.Instance.UpdateDiamondText(currentDiamond);
-        }
-        NotifyExpChange();
-    }
-
-    void NotifyExpChange()
-    {
-        OnExpChange?.Invoke(currentExp, maxExp);
-        if (GameUI.Instance != null)
-        {
-            GameUI.Instance.UpdateExpUI(currentExp, maxExp, level);
-        }
+    Debug.Log("[ProfileManager] 모든 데이터 동기화 완료.");
     }
 
     // ==========================================
@@ -270,18 +249,6 @@ public class ProfileManager : MonoBehaviour
             form.AddField("skillDamage", PlayerStats.Instance.skillDamage.ToString());
             form.AddField("cooldownReduction", PlayerStats.Instance.cooldownReduction.ToString());
             form.AddField("knockbackChance", PlayerStats.Instance.knockbackChance.ToString());
-        }
-
-        // 체력 정보 수집
-        if (player != null)
-        {
-            var hpComp = player.GetComponent<HealthSystemComponent>();
-            if (hpComp != null)
-            {
-                var hs = hpComp.GetHealthSystem();
-                form.AddField("currentHp", hs.GetHealth().ToString());
-                form.AddField("maxHp", hs.GetHealthMax().ToString());
-            }
         }
 
         using (UnityWebRequest www = UnityWebRequest.Post(saveUserInfoUrl, form))

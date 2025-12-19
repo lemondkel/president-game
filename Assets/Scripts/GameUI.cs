@@ -4,32 +4,35 @@ using UnityEngine.UI;
 
 public class GameUI : MonoBehaviour
 {
-    // ¾îµð¼­µç Á¢±Ù °¡´ÉÇÏ°Ô ½Ì±ÛÅæ Ã³¸® (¼±ÅÃ»çÇ×ÀÌ³ª ÆíÀÇ»ó ÃßÃµ)
+    // ï¿½ï¿½ð¼­µï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½Ì±ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½ (ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ì³ï¿½ ï¿½ï¿½ï¿½Ç»ï¿½ ï¿½ï¿½Ãµ)
     public static GameUI Instance;
 
     [Header("Exp & Level")]
-    public Slider expSlider;          // °æÇèÄ¡ ¹Ù (Slider)
-    public TextMeshProUGUI levelText; // ·¹º§ ÅØ½ºÆ® (Lv.1)
+    public Slider expSlider;          // ï¿½ï¿½ï¿½ï¿½Ä¡ ï¿½ï¿½ (Slider)
+    public TextMeshProUGUI levelText; // ï¿½ï¿½ï¿½ï¿½ ï¿½Ø½ï¿½Æ® (Lv.1)
 
-    [Header("New Stage UI")]
-    public TextMeshProUGUI remainEnemyText; // ¡Ú Ãß°¡: ³²Àº ¸ó½ºÅÍ ¼ö ÅØ½ºÆ®
+    [Header("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ UI")]
+    public TextMeshProUGUI remainEnemyText; // ï¿½ï¿½ ï¿½ß°ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ø½ï¿½Æ®
 
-    [Header("°ñµå UI")]
-    public TextMeshProUGUI currentGoldText; // ¡Ú Gold Text
+    [Header("ï¿½ï¿½ï¿½ UI")]
+    public TextMeshProUGUI currentGoldText; // ï¿½ï¿½ Gold Text
 
-    [Header("´ÙÀÌ¾Æ UI")]
-    public TextMeshProUGUI currentDiamondText; // ¡Ú Diamond Text
+    [Header("ï¿½ï¿½ï¿½Ì¾ï¿½ UI")]
+    public TextMeshProUGUI currentDiamondText; // ï¿½ï¿½ Diamond Text
+
+    [Header("Stage UI")]
+    public TextMeshProUGUI currentStageText;
 
     void Awake()
     {
         if (Instance == null) Instance = this;
     }
 
-    // ¡Ú ÇÙ½É: °æÇèÄ¡¿Í ·¹º§À» ¹Þ¾Æ¼­ UI °»½Å
+    // ï¿½ï¿½ ï¿½Ù½ï¿½: ï¿½ï¿½ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¾Æ¼ï¿½ UI ï¿½ï¿½ï¿½ï¿½
     public void UpdateExpUI(int currentExp, int maxExp, int level)
     {
-        // 1. ½½¶óÀÌ´õ ºñÀ² °è»ê (0.0 ~ 1.0)
-        // Á¤¼ö³¢¸® ³ª´©¸é 0ÀÌ µÇ¹Ç·Î ¹Ýµå½Ã (float) Ä³½ºÆÃ ÇÊ¿ä
+        // 1. ï¿½ï¿½ï¿½ï¿½ï¿½Ì´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ (0.0 ~ 1.0)
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 0ï¿½ï¿½ ï¿½Ç¹Ç·ï¿½ ï¿½Ýµï¿½ï¿½ (float) Ä³ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½
         float ratio = (float)currentExp / maxExp;
 
         if (expSlider != null)
@@ -37,14 +40,14 @@ public class GameUI : MonoBehaviour
             expSlider.value = ratio;
         }
 
-        // 2. ·¹º§ ÅØ½ºÆ® °»½Å
+        // 2. ï¿½ï¿½ï¿½ï¿½ ï¿½Ø½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½
         if (levelText != null)
         {
             levelText.text = $"Lv.{level}";
         }
     }
 
-    // ³²Àº ¸ó½ºÅÍ ¼ö °»½Å (¾Æ±î Ãß°¡ÇÑ ±â´É)
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Æ±ï¿½ ï¿½ß°ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
     public void UpdateRemainText(int count, int max)
     {
         if (remainEnemyText != null)
@@ -57,7 +60,7 @@ public class GameUI : MonoBehaviour
     {
         if (currentGoldText != null)
         {
-            // ±×³É val.ToString() ´ë½Å Æ÷¸ËÆÃ ÇÔ¼ö È£Ãâ
+            // ï¿½×³ï¿½ val.ToString() ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ È£ï¿½ï¿½
             currentGoldText.text = GetUnitNumber(val);
         }
     }
@@ -66,41 +69,49 @@ public class GameUI : MonoBehaviour
     {
         if (currentDiamondText != null)
         {
-            // ±×³É val.ToString() ´ë½Å Æ÷¸ËÆÃ ÇÔ¼ö È£Ãâ
+            // ï¿½×³ï¿½ val.ToString() ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ È£ï¿½ï¿½
             currentDiamondText.text = GetUnitNumber(val);
         }
     }
 
-    // ¼ýÀÚ¸¦ K, M, B, T ´ÜÀ§·Î ¹Ù²ãÁÖ´Â ÇïÆÛ ÇÔ¼ö
+    public void UpdateStageText(long val)
+    {
+        if (currentStageText != null)
+        {
+            currentStageText.text = "Stage " + val.ToString("0");
+        }
+    }
+
+    // ï¿½ï¿½ï¿½Ú¸ï¿½ K, M, B, T ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ù²ï¿½ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½
     string GetUnitNumber(long value)
     {
-        // 1,000 ¹Ì¸¸Àº ±×´ë·Î Ç¥½Ã
+        // 1,000 ï¿½Ì¸ï¿½ï¿½ï¿½ ï¿½×´ï¿½ï¿½ Ç¥ï¿½ï¿½
         if (value < 1000)
         {
             return value.ToString();
         }
 
-        // T (Trillion, Á¶) : 1,000,000,000,000
+        // T (Trillion, ï¿½ï¿½) : 1,000,000,000,000
         if (value >= 1000000000000)
         {
-            // 0.### : ¼Ò¼öÁ¡ 3ÀÚ¸®±îÁö º¸¿©ÁÖµÇ, 0ÀÌ¸é »ý·« (¿¹: 1.5T, 1.234T)
+            // 0.### : ï¿½Ò¼ï¿½ï¿½ï¿½ 3ï¿½Ú¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Öµï¿½, 0ï¿½Ì¸ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½: 1.5T, 1.234T)
             return (value / 1000000000000d).ToString("0.###") + "T";
         }
 
-        // B (Billion, ½Ê¾ï) : 1,000,000,000
+        // B (Billion, ï¿½Ê¾ï¿½) : 1,000,000,000
         if (value >= 1000000000)
         {
             return (value / 1000000000d).ToString("0.###") + "B";
         }
 
-        // M (Million, ¹é¸¸) : 1,000,000
+        // M (Million, ï¿½é¸¸) : 1,000,000
         if (value >= 1000000)
         {
             return (value / 1000000d).ToString("0.###") + "M";
         }
 
         // K (Thousand, Ãµ) : 1,000
-        // ¸¶Áö¸· Á¶°ÇÀº else·Î Ã³¸®ÇØµµ µÊ
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ elseï¿½ï¿½ Ã³ï¿½ï¿½ï¿½Øµï¿½ ï¿½ï¿½
         return (value / 1000d).ToString("0.###") + "K";
     }
 }

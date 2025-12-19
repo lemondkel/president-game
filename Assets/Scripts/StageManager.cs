@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using TMPro;
 using System.Collections.Generic;
 using System.Collections;
 using FreewrokGame;
@@ -8,20 +9,24 @@ public class StageManager : MonoBehaviour
     public static StageManager Instance;
 
     [Header("Config")]
-    public List<StageData> allStages; // Inspector에서 Stage1, Stage2 데이터 연결
+    public List<StageData> allStages;
 
     [Header("Current State")]
-    public int currentStageIndex = 0; // 0부터 시작 (List Index)
+    public int currentStageIndex = 0;
     public StageData currentStageData;
 
-    // UI 스크립트 연결 (Inspector에서 GameUI 오브젝트 드래그)
+    [Header("Stage Number UI")]
+    public TextMeshProUGUI stageNumberText;
+
     public GameUI gameUI;
 
-    // 현재 스테이지 진행 상황
     public int spawnedCount = 0;
     public int killCount = 0;
 
-    public Transform playerTransform; // 플레이어 위치 이동용
+    public Transform playerTransform;
+
+    // ★ [추가] "청소 중"인지 확인하는 깃발
+    public bool isClearing = false;
 
     void Awake()
     {
@@ -30,10 +35,11 @@ public class StageManager : MonoBehaviour
 
     void Start()
     {
-        // 게임 시작 시, GameManager가 서버에서 로드한 스테이지 인덱스가 있다면 
-        // GameManager가 이 변수(currentStageIndex)를 덮어씌운 뒤 LoadStage를 호출하거나
-        // 여기서 로드합니다. (타이밍 이슈가 있다면 GameManager.ApplyServerData에서 LoadStage를 호출하는 것이 가장 정확합니다)
-        LoadStage(currentStageIndex);
+        // GameManager가 로드 후 실행해주겠지만, 안전장치로
+        if (GameManager.Instance == null)
+        {
+            LoadStage(currentStageIndex);
+        }
     }
 
     public void LoadStage(int index)
@@ -44,38 +50,41 @@ public class StageManager : MonoBehaviour
             return;
         }
 
+        // ★ [중요] 스테이지 넘어갈 때도 기존 몬스터가 있다면 지워줘야 겹치지 않습니다.
+        // 만약 스테이지 이동 시에는 몬스터를 유지하고 싶다면 이 부분은 생략 가능합니다.
+        // 하지만 보통은 새 스테이지 가면 이전 몹은 지웁니다.
+        if (index > 0)
+        {
+            // StartCoroutine(ClearEnemiesWithoutReward()); // 필요하면 추가
+        }
+
         currentStageIndex = index;
         currentStageData = allStages[index];
 
-        // 상태 초기화
         spawnedCount = 0;
         killCount = 0;
 
-        // 시작하자마자 UI 갱신
         UpdateRemainUI();
 
         Debug.Log($"=== Stage {currentStageData.stageNumber} Start! ===");
         Debug.Log($"목표: {currentStageData.maxEnemyCount}마리 처치");
     }
 
-    // 몬스터가 죽을 때마다 호출 (EnemyBehavior에서 호출)
     public void OnEnemyKilled()
     {
-        killCount++;
+        // ★ [추가] 청소 중(재시작 중)이면 카운트도 올리지 않고, 클리어 체크도 안 함
+        if (isClearing) return;
 
-        // UI 갱신
+        killCount++;
         UpdateRemainUI();
 
-        // 클리어 체크
         if (killCount >= currentStageData.maxEnemyCount)
         {
-            // 1. 클리어 연출 (현재 인덱스 + 1 스테이지 클리어)
             if (StageClearUI.Instance != null)
             {
                 StageClearUI.Instance.ShowClearSequence(currentStageIndex + 1);
             }
 
-            // 2. ★ [수정됨] 서버로 데이터 전송 (GameManager에게 요청)
             if (GameManager.Instance != null)
             {
                 Debug.Log("스테이지 클리어! 서버에 데이터 저장 요청...");
@@ -84,27 +93,27 @@ public class StageManager : MonoBehaviour
         }
     }
 
-    // UI에서 연출이 끝난 뒤 부를 함수
     public void LoadNextStage()
     {
         LoadStage(currentStageIndex + 1);
     }
 
-    // UI 갱신 헬퍼
-    void UpdateRemainUI()
+    public void UpdateRemainUI()
     {
         if (gameUI != null && currentStageData != null)
         {
+            if (currentStageData.stageNumber != 1)
+            {
+                if (stageNumberText != null)
+                    stageNumberText.text = "Stage " + currentStageData.stageNumber.ToString("0");
+            }
             int remain = currentStageData.maxEnemyCount - killCount;
-            remain = Mathf.Max(0, remain); // 음수 방지
+            remain = Mathf.Max(0, remain);
 
             gameUI.UpdateRemainText(remain, currentStageData.maxEnemyCount);
         }
     }
 
-    // ==========================================
-    // 사망 및 재시작 로직
-    // ==========================================
     public void RestartStage()
     {
         StartCoroutine(RestartRoutine());
@@ -117,11 +126,14 @@ public class StageManager : MonoBehaviour
         if (GameManager.Instance != null)
             GameManager.Instance.isPlayerDead = true;
 
-        // 1. 조작 차단
         SetPlayerControl(false);
 
-        // 2. 대기 (연출)
         yield return new WaitForSeconds(2.0f);
+
+        // ==========================================
+        // ★ [수정] 청소 모드 ON (아이템 드랍 방지)
+        // ==========================================
+        isClearing = true;
 
         // 3. 맵 상의 모든 적 삭제
         EnemyBehavior[] enemies = FindObjectsOfType<EnemyBehavior>();
@@ -130,6 +142,14 @@ public class StageManager : MonoBehaviour
         // 4. 떨어진 아이템 삭제
         DroppedItem[] items = FindObjectsOfType<DroppedItem>();
         foreach (var item in items) Destroy(item.gameObject);
+
+        // Destroy가 완전히 처리될 때까지 1프레임 대기
+        yield return null;
+
+        // ★ 청소 모드 OFF
+        isClearing = false;
+        // ==========================================
+
 
         // 5. 플레이어 위치 & 체력 리셋
         if (playerTransform != null)
@@ -143,17 +163,14 @@ public class StageManager : MonoBehaviour
             }
         }
 
-        // 6. 스테이지 진행 상황 리셋
         spawnedCount = 0;
         killCount = 0;
 
-        // UI 갱신
         if (gameUI != null)
         {
             gameUI.UpdateRemainText(currentStageData.maxEnemyCount, currentStageData.maxEnemyCount);
         }
 
-        // 7. 조작 복구
         SetPlayerControl(true);
 
         if (GameManager.Instance != null)
@@ -166,15 +183,12 @@ public class StageManager : MonoBehaviour
     {
         if (playerTransform == null) return;
 
-        // 조준/애니메이션 스크립트
         var aimScript = playerTransform.GetComponent<PlayerMovementAndAnimation>();
         if (aimScript != null) aimScript.enabled = isActive;
 
-        // 스킬 스크립트
         var abilities = playerTransform.GetComponents<AbilityBase>();
         foreach (var ability in abilities) ability.enabled = isActive;
 
-        // 물리 연산 제어
         var rb = playerTransform.GetComponent<Rigidbody2D>();
         if (rb != null)
         {
