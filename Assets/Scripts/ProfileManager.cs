@@ -3,8 +3,8 @@ using System;
 using System.Collections;
 using UnityEngine.Networking;
 using TMPro;
-using CodeMonkey.HealthSystemCM;
-
+using UnityEngine.UI;
+using System.IO;
 public class ProfileManager : MonoBehaviour
 {
     public static ProfileManager Instance;
@@ -18,6 +18,8 @@ public class ProfileManager : MonoBehaviour
     private string baseUrl = "http://112.169.189.87:3000";
     private string saveUserInfoUrl => $"{baseUrl}/api/user/save-info";
     private string loadDataUrl => $"{baseUrl}/getUserData";
+
+    private string uploadUrl => $"{baseUrl}/upload"; // 본인 서버 주소
 
     [Header("Player Status")]
     public int level = 1;
@@ -85,6 +87,9 @@ public class ProfileManager : MonoBehaviour
         public float cooldownReduction;
         public float knockbackChance;
     }
+
+
+    public RawImage profileDisplay; // 프로필이 표시될 RawImage (Image도 가능)
 
     void Awake()
     {
@@ -270,6 +275,73 @@ public class ProfileManager : MonoBehaviour
             {
                 Debug.LogError($"데이터 저장 실패: {www.error}");
             }
+        }
+    }
+
+    // 버튼 OnClick에 이 함수를 연결하세요
+    public void OnClickChangeProfile()
+    {
+        // NativeGallery를 사용하여 이미지 선택
+        NativeGallery.GetImageFromGallery((path) =>
+        {
+            if (path != null)
+            {
+                // 1. 화면에 표시 (NativeGallery의 유틸리티 사용)
+                Texture2D texture = NativeGallery.LoadImageAtPath(path, 512); // 최대 512 해상도로 로드
+                if (texture != null)
+                {
+                    profileDisplay.texture = texture;
+
+                    // 2. 서버로 전송 시작
+                    StartCoroutine(UploadImageCoroutine(texture));
+                }
+            }
+        }, "프로필 사진 선택", "image/*");
+    }
+
+    IEnumerator UploadImageCoroutine(Texture2D tex)
+    {
+        // 이미지를 JPG 바이트 배열로 변환
+        byte[] imageData = tex.EncodeToJPG(80);
+
+        // 머티리얼 폼 데이터 생성
+        WWWForm form = new WWWForm();
+        form.AddField("uuid", uuid);
+        form.AddBinaryData("profile_image", imageData, "user_profile.jpg", "image/jpeg");
+
+        using (UnityWebRequest www = UnityWebRequest.Post(uploadUrl, form))
+        {
+            Debug.Log("서버 업로드 중...");
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("업로드 실패: " + www.error);
+            }
+            else
+            {
+                Debug.Log("업로드 완료! 서버 응답: " + www.downloadHandler.text);
+            }
+        }
+    }
+
+    void UpdateProfileImage(string filePath)
+    {
+        // 파일을 바이트 배열로 읽기
+        byte[] fileData = File.ReadAllBytes(filePath);
+
+        // 새로운 텍스트처 생성
+        Texture2D tex = new Texture2D(2, 2);
+        if (tex.LoadImage(fileData))
+        {
+            // RawImage에 적용
+            profileDisplay.texture = tex;
+
+            // 만약 UI Image(Sprite)를 사용한다면 아래 주석 해제
+            /*
+            Rect rect = new Rect(0, 0, tex.width, tex.height);
+            profileDisplay.GetComponent<Image>().sprite = Sprite.Create(tex, rect, new Vector2(0.5f, 0.5f));
+            */
         }
     }
 }
