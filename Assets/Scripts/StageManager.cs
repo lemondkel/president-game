@@ -56,7 +56,7 @@ public class StageManager : MonoBehaviour
     public static StageManager Instance;
 
     [Header("Config")]
-    public string serverUrl = "http://localhost:3000/api/admin/stages";
+    public string serverUrl = "http://112.169.189.87:3000/api/admin/stages";
     public bool useServerData = true; // 서버 데이터 사용 여부
 
     [Header("Data Source")]
@@ -188,7 +188,7 @@ public class StageManager : MonoBehaviour
                 {
                     entry.prefab = PrefabManager.Instance.GetPrefab(enemyDto.prefabId);
 
-                    // ★ 서버에서 데이터 ID를 따로 안 보내주므로, 
+                    // ★ 서버에서 데이터 ID를 따로 안 보내주므로,
                     // 프리팹 ID와 짝지어진 기본 데이터를 사용합니다.
                     entry.data = PrefabManager.Instance.GetData(enemyDto.prefabId);
                 }

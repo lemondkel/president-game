@@ -3,7 +3,7 @@ using System;
 using System.Collections;
 using UnityEngine.Networking;
 using CodeMonkey.HealthSystemCM;
-
+using FreewrokGame;
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
@@ -158,6 +158,7 @@ public class GameManager : MonoBehaviour
             Debug.Log($"[GameManager] 스테이지 로드 요청: {data.stageNumber} (Index: {stageIndex})");
         }
 
+        Debug.Log($"[GameManager] PlayerStats 갱신!");
         // 3. PlayerStats 갱신
         if (PlayerStats.Instance != null)
         {
@@ -173,6 +174,16 @@ public class GameManager : MonoBehaviour
             PlayerStats.Instance.knockbackChance = data.knockbackChance;
         }
 
+        Debug.Log($"[GameManager] PlayerMovementAndAnimation 갱신!");
+        PlayerMovementAndAnimation playerMovementAndAnimation = PlayerMovementAndAnimation.Instance;
+        if (playerMovementAndAnimation != null)
+        {
+            Debug.Log($"기존 스피드: {playerMovementAndAnimation.getSpeedWalk()}");
+            playerMovementAndAnimation.setSpeedWalk(PlayerStats.Instance.moveSpeed);
+            Debug.Log($"TOBE 스피드: {playerMovementAndAnimation.getSpeedWalk()}");
+        }
+
+        Debug.Log($"[GameManager] 체력 갱신!");
         // 4. 체력 갱신
         if (player != null)
         {
