@@ -18,6 +18,8 @@ namespace FreewrokGame
 
     public class PlayerMovementAndAnimation : MonoBehaviour
     {
+        public static PlayerMovementAndAnimation Instance;
+
         // === [ Joystick Ãß°¡ ] ===
         [Header("Joystick Settings")]
         public Joystick joystick;
@@ -63,6 +65,16 @@ namespace FreewrokGame
             if (initialScale.x == 0) initialScale = new Vector3(1, 1, 1);
 
             Restart();
+        }
+
+        public float getSpeedWalk()
+        {
+            return speedWalk;
+        }
+
+        public void setSpeedWalk(float val)
+        {
+            this.speedWalk += val;
         }
 
         void Restart()
