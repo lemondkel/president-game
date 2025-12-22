@@ -1,90 +1,86 @@
 using UnityEngine;
 
-// (����) EnemyBehavior�� �⺻���� ���¸� �����Ͽ� �ۼ��߽��ϴ�.
-// ���� ������Ʈ�� EnemyBehavior�� �� ������ �����Ͻø� �˴ϴ�.
 public class EnemyBehavior : MonoBehaviour
 {
     [Header("References")]
-    public SpriteRenderer spriteRenderer; // ������ ������ ��������Ʈ ������
+    // public SpriteRenderer spriteRenderer; 
 
     [Header("Movement")]
-    public float moveSpeed = 2.0f; // �� �̵� �ӵ� (�⺻��)
+    public float moveSpeed = 2.0f;
 
-    // ���� ��Ÿ�� ����
+    // 실제 런타임 스탯
     private float currentHp;
     private float currentDamage;
     private float currentDefense;
 
     private Transform target;
-    private EnemyData baseData; // ���� ������ ����
+    private EnemyData baseData; // 원본 데이터 참조 (null일 수 있음)
 
-    // �� �ʱ�ȭ �Լ� (Spawner���� ȣ��)
-    // �� ���� ���� �Ķ����(useTint, tintColor)�� �߰��Ǿ����ϴ�.
     public void Initialize(EnemyData data, Transform playerTransform, StageData stageInfo, bool useTint, Color tintColor)
     {
         target = playerTransform;
-        this.baseData = data;
+        this.baseData = data; // 데이터 저장 (null일 수도 있음)
 
-        // 1. ���� ��� (�⺻ ������ * �������� ����ġ)
-        currentHp = data.maxHp * stageInfo.hpMultiplier;
-        currentDamage = data.attackPower * stageInfo.damageMultiplier;
-        currentDefense = data.defense * stageInfo.defenseMultiplier;
+        // ★ [수정] baseData에 직접 쓰는 게 아니라, 계산용 지역 변수를 사용합니다.
+        float baseHp = 1f;      // 기본 체력
+        float baseDamage = 1f;   // 기본 공격력
+        float baseDefense = 1f;  // 기본 방어력
 
-        // 2. �� ���� ���� ����
+        if (data != null)
+        {
+            // 데이터가 있으면 그 값을 사용
+            baseHp = data.maxHp;       // (EnemyData 필드명에 맞게 수정하세요. 예: maxHp)
+            baseDamage = data.attackPower; // (예: attackPower)
+            baseDefense = data.defense;
+        }
+        else
+        {
+            Debug.LogWarning($"[{gameObject.name}] EnemyData가 연결되지 않았습니다! 기본 HP(1)를 사용합니다.");
+        }
+
+        // 1. 스탯 계산 (기본값 * 스테이지 보정치)
+        float hpMult = stageInfo ? stageInfo.hpMultiplier : 1f;
+        float dmgMult = stageInfo ? stageInfo.damageMultiplier : 1f;
+        float defMult = stageInfo ? stageInfo.defenseMultiplier : 1f;
+
+        currentHp = baseHp * hpMult;
+        currentDamage = baseDamage * dmgMult;
+        currentDefense = baseDefense * defMult;
+
         ApplyTintColor(useTint, tintColor);
-
-        // �߰����� �ʱ�ȭ ���� (��: AI ���� ��)
-        // ...
     }
 
-    // �� [�߰�] �� �����Ӹ��� �÷��̾ ���� �̵��ϴ� ����
+
+    // PlayerHealth에서 이 적의 공격력을 알 수 있도록 Getter 제공
+    public float GetCurrentDamage()
+    {
+        return currentDamage;
+    }
+
     private void Update()
     {
         if (target != null)
         {
-            // �÷��̾� ���� ���� ���
             Vector3 direction = (target.position - transform.position).normalized;
-
-            // �̵�
             transform.position += direction * moveSpeed * Time.deltaTime;
-
-            // (���� ����) ���� �÷��̾ �ٶ󺸰� �Ϸ��� �Ʒ� �ּ� ����
-            // if (direction.x != 0) spriteRenderer.flipX = direction.x < 0;
         }
     }
 
-    // ������ ��������Ʈ�� �����ϴ� ���� �Լ�
-    // ★ [수정됨] 자신 및 모든 하위 요소의 SpriteRenderer 색상을 변경하는 함수
     private void ApplyTintColor(bool useTint, Color tintColor)
     {
-        // 자신을 포함한 모든 자식 오브젝트에서 SpriteRenderer 컴포넌트들을 찾습니다.
         SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>();
 
-        if (renderers == null || renderers.Length == 0)
-        {
-            // Debug.LogWarning($"{gameObject.name}: 하위 요소에서 SpriteRenderer를 찾을 수 없습니다.");
-            return;
-        }
+        if (renderers == null || renderers.Length == 0) return;
 
         foreach (SpriteRenderer renderer in renderers)
         {
-            if (useTint)
-            {
-                // 설정된 색상(알파값 포함) 적용
-                renderer.color = tintColor;
-            }
-            else
-            {
-                // 색상을 사용하지 않으면 기본 흰색(원본)으로 복구
-                renderer.color = Color.white;
-            }
+            if (useTint) renderer.color = tintColor;
+            else renderer.color = Color.white;
         }
     }
 
-    // (����) ���� �ǰ� ���� �� ���
     public void TakeDamage(float damage)
     {
-        // ���� ���� ���� ����
         float finalDamage = Mathf.Max(1, damage - currentDefense);
         currentHp -= finalDamage;
 
@@ -95,27 +91,28 @@ public class EnemyBehavior : MonoBehaviour
     }
 
     private void Die()
+    {
+        // 1. 경험치 처리
+        if (GameManager.Instance != null)
         {
-            // 1. [���� �ǽ�] ����ġ ���� (�� ���� ��� ����ġ�� �� �ö��� �̴ϴ�)
-            if (GameManager.Instance != null)
-            {
-                // data�� EnemyData ��ũ���ͺ� ������Ʈ
-                GameManager.Instance.AddExp(baseData.expReward);
-            }
-
-            // 2. ������ ��� (�Ʊ� �߰��� ����)
-            if (LootManager.Instance != null)
-            {
-                LootManager.Instance.SpawnLoot(transform.position);
-            }
-
-            // 3. �������� ų ī��Ʈ ����
-            if (StageManager.Instance != null)
-            {
-                StageManager.Instance.OnEnemyKilled();
-            }
-
-            // 4. ����
-            Destroy(gameObject);
+            // ★ [수정] baseData가 null일 경우 기본 경험치(1) 지급
+            int exp = (baseData != null) ? baseData.expReward : 1;
+            GameManager.Instance.AddExp(exp);
         }
+
+        // 2. 아이템 드랍
+        if (LootManager.Instance != null)
+        {
+            LootManager.Instance.SpawnLoot(transform.position);
+        }
+
+        // 3. 킬 카운트
+        if (StageManager.Instance != null)
+        {
+            StageManager.Instance.OnEnemyKilled();
+        }
+
+        // 4. 소멸
+        Destroy(gameObject);
+    }
 }

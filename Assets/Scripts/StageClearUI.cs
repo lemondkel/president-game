@@ -72,6 +72,6 @@ public class StageClearUI : MonoBehaviour
         if (StageManager.Instance == null) return false;
         // stageNum은 1부터 시작, 리스트 인덱스는 0부터 시작
         int index = stageNum - 1;
-        return index >= 0 && index < StageManager.Instance.allStages.Count;
+        return index >= 0 && index < StageManager.Instance.serverStageList.Count;
     }
 }

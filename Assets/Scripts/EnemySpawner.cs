@@ -8,10 +8,38 @@ public class EnemySpawner : MonoBehaviour
     public Transform playerTarget; // 플레이어 참조
     public float spawnRange = 10f; // 스폰 반경
 
+    private Coroutine spawnCoroutine;
+
     void Start()
     {
-        // 단일 스폰 루틴 시작
-        StartCoroutine(SpawnRoutine());
+        // ★ [변경] 바로 시작하지 않고, StageManager 상태 확인
+        if (StageManager.Instance != null)
+        {
+            // 이미 데이터가 있다면 바로 시작
+            if (StageManager.Instance.currentStageData != null)
+            {
+                StartSpawning();
+            }
+
+            // 데이터 로드 완료 이벤트를 구독 (나중에 로드될 경우를 대비)
+            StageManager.Instance.OnStageDataLoaded += StartSpawning;
+        }
+    }
+
+    void OnDestroy()
+    {
+        // 이벤트 구독 해제 (메모리 누수 방지)
+        if (StageManager.Instance != null)
+        {
+            StageManager.Instance.OnStageDataLoaded -= StartSpawning;
+        }
+    }
+
+    void StartSpawning()
+    {
+        // 중복 실행 방지
+        if (spawnCoroutine != null) StopCoroutine(spawnCoroutine);
+        spawnCoroutine = StartCoroutine(SpawnRoutine());
     }
 
     IEnumerator SpawnRoutine()

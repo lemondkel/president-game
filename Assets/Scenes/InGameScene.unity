@@ -1464,6 +1464,7 @@ Transform:
   - {fileID: 752133579}
   - {fileID: 1045103322}
   - {fileID: 974628918}
+  - {fileID: 1301627650}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &741198440
@@ -3137,6 +3138,55 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bc697807202efab4485e4122ca5828ac, type: 3}
+--- !u!1 &1301627649
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1301627650}
+  - component: {fileID: 1301627651}
+  m_Layer: 0
+  m_Name: PrefabManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1301627650
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301627649}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 700588932}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1301627651
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1301627649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e28f1e98e940def42ae26e0a7698db68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enemyPrefabs:
+  - id: Enemy1
+    prefab: {fileID: 6289131692750120387, guid: c13a2f0f57ec56d42b4bc114a3657795,
+      type: 3}
+    defaultData: {fileID: 11400000, guid: 1022ed62ff4c79e4ba92d2e16b9d9f7f, type: 2}
 --- !u!1 &1310887469
 GameObject:
   m_ObjectHideFlags: 0
@@ -3282,14 +3332,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerTarget: {fileID: 1492442396}
   spawnRange: 10
-  enemyPrefab: {fileID: 6289131692750120387, guid: c13a2f0f57ec56d42b4bc114a3657795,
-    type: 3}
-  baseEnemyData: {fileID: 11400000, guid: 1022ed62ff4c79e4ba92d2e16b9d9f7f, type: 2}
-  spawnList:
-  - name: "\uC18C"
-    prefab: {fileID: 6289131692750120387, guid: c13a2f0f57ec56d42b4bc114a3657795,
-      type: 3}
-    stats: {fileID: 11400000, guid: 1022ed62ff4c79e4ba92d2e16b9d9f7f, type: 2}
 --- !u!1 &1361826442
 GameObject:
   m_ObjectHideFlags: 0
@@ -4326,10 +4368,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9366db55518847e458e569ff6b797614, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  allStages:
-  - {fileID: 11400000, guid: 975e404a91b572d419befd9d07fd063c, type: 2}
-  - {fileID: 11400000, guid: 8e205923711ec8d4e9884734a47d5d71, type: 2}
-  - {fileID: 11400000, guid: 1c3612f26702a144bbdb55ea95fc6659, type: 2}
+  serverUrl: http://112.169.189.87:3000/api/admin/stages
+  useServerData: 1
+  localStages: []
+  serverStageList: []
   currentStageIndex: 0
   currentStageData: {fileID: 0}
   stageNumberText: {fileID: 0}

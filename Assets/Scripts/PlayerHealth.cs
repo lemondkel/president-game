@@ -11,7 +11,7 @@ public class PlayerHealth : MonoBehaviour
     public TextMeshProUGUI hpText;
 
     [Header("Settings")]
-    public float hitCooldown = 0.5f; // 맞고 나서 0.5초 동안은 무적 (연속 피격 방지)
+    public float hitCooldown = 0.5f; // 무적 시간
     private float lastHitTime;
 
     void Start()
@@ -51,36 +51,56 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    // ★ [핵심] 몬스터와 계속 닿아있을 때
+    // ★ [핵심] 몬스터와 충돌 감지 (물리)
     private void OnCollisionStay2D(Collision2D collision)
     {
-        // 태그 확인: 몬스터인지?
         if (collision.gameObject.CompareTag("Enemy"))
         {
-            // 무적 시간 체크 (쿨타임)
-            if (Time.time > lastHitTime + hitCooldown)
+            TryTakeDamageFrom(collision.gameObject);
+        }
+    }
+
+    // ★ [핵심] 몬스터와 겹침 감지 (트리거)
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Enemy"))
+        {
+            TryTakeDamageFrom(collision.gameObject);
+        }
+    }
+
+    // 데미지 처리 공통 로직
+    private void TryTakeDamageFrom(GameObject enemyObject)
+    {
+        // 무적 시간 체크
+        if (Time.time > lastHitTime + hitCooldown)
+        {
+            // 1. 부딪힌 적의 스크립트 가져오기
+            EnemyBehavior enemy = enemyObject.GetComponent<EnemyBehavior>();
+
+            if (enemy != null)
             {
-                // 1. 부딪힌 놈(Enemy)의 스크립트 가져오기
-                // (EnemyBehavior 스크립트 안에 damageAmount가 있다고 가정)
-                EnemyBehavior enemy = collision.gameObject.GetComponent<EnemyBehavior>();
+                // 2. 적의 실제 공격력 가져오기 (Initialize에서 계산된 값)
+                float damage = enemy.GetCurrentDamage();
 
-                if (enemy != null)
+                // 0뎀이면 무시
+                if (damage > 0)
                 {
-                    // 2. 그 적의 공격력(Damage)을 가져와서 적용
-                    float finalDamage = StageManager.Instance.currentStageData.damageMultiplier;
-
-                    // (만약 ScriptableObject인 'EnemyData'를 따로 쓰고 계시다면 아래처럼)
-                    // float finalDamage = enemy.enemyData.attack; 
-
-                    TakeDamage(finalDamage);
-
-                    // 디버그용 (확인하고 지우세요)
-                    // Debug.Log($"아야! {finalDamage} 데미지 입음!");
+                    TakeDamage(damage);
+                    // Debug.Log($"[피격] {enemy.name}에게 {damage} 데미지를 입었습니다.");
                 }
-
-                // 맞은 시간 갱신
-                lastHitTime = Time.time;
             }
+            else
+            {
+                // (비상용) EnemyBehavior가 없는 'Enemy' 태그라면 스테이지 기본 데미지 적용
+                if (StageManager.Instance != null && StageManager.Instance.currentStageData != null)
+                {
+                    TakeDamage(StageManager.Instance.currentStageData.damageMultiplier);
+                }
+            }
+
+            // 맞은 시간 갱신
+            lastHitTime = Time.time;
         }
     }
 
