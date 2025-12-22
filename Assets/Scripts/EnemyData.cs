@@ -8,7 +8,7 @@ public class EnemyData : ScriptableObject
     public float maxHp = 1f;
     public float attackPower = 1f;
     public float defense = 0f;
-    public float moveSpeed = 1f;
+    public float moveSpeed = 0.7f;
 
     [Header("Rewards")]
     public int expReward = 1; // ★ 추가: 이 몬스터 잡으면 주는 경험치 (CowData에서 1로 설정)

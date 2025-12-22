@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 // Networking 네임스페이스 제거 (더 이상 통신 안 함)
+using CodeMonkey.HealthSystemCM;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -41,8 +42,4 @@ public class PlayerStats : MonoBehaviour
         defense += amount;
         Debug.Log($"방어력 증가! 현재: {defense}");
     }
-
-    // 필요한 경우 다른 스탯 증가 함수들도 추가...
-    // 저장/로드 함수(SaveDataToServer, LoadDataFromServer)는 모두 삭제!
-    // 그 역할은 이제 GameManager가 수행합니다.
 }

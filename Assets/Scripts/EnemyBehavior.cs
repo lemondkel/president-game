@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections; // 코루틴 사용을 위해 추가
 
 public class EnemyBehavior : MonoBehaviour
 {
@@ -8,6 +9,10 @@ public class EnemyBehavior : MonoBehaviour
     [Header("Movement")]
     public float moveSpeed = 2.0f;
 
+    [Header("Visual Effects")]
+    public Color hitColor = Color.red; // 피격 시 변할 색상 (흰색이나 빨간색 추천)
+    public float flashDuration = 0.1f; // 번쩍이는 시간
+
     // 실제 런타임 스탯
     private float currentHp;
     private float currentDamage;
@@ -15,6 +20,10 @@ public class EnemyBehavior : MonoBehaviour
 
     private Transform target;
     private EnemyData baseData; // 원본 데이터 참조 (null일 수 있음)
+
+    // 원래 색상 저장용 (틴트 포함)
+    private Color originalTintColor = Color.white;
+    private Coroutine flashCoroutine;
 
     public void Initialize(EnemyData data, Transform playerTransform, StageData stageInfo, bool useTint, Color tintColor)
     {
@@ -25,13 +34,15 @@ public class EnemyBehavior : MonoBehaviour
         float baseHp = 1f;      // 기본 체력
         float baseDamage = 1f;   // 기본 공격력
         float baseDefense = 1f;  // 기본 방어력
+        float baseSpeed = 2.0f;  // ★ [추가] 기본 이동 속도
 
         if (data != null)
         {
             // 데이터가 있으면 그 값을 사용
-            baseHp = data.maxHp;       // (EnemyData 필드명에 맞게 수정하세요. 예: maxHp)
-            baseDamage = data.attackPower; // (예: attackPower)
+            baseHp = data.maxHp;
+            baseDamage = data.attackPower;
             baseDefense = data.defense;
+            baseSpeed = data.moveSpeed; // ★ [추가] 데이터에서 이동 속도 가져옴
         }
         else
         {
@@ -47,9 +58,26 @@ public class EnemyBehavior : MonoBehaviour
         currentDamage = baseDamage * dmgMult;
         currentDefense = baseDefense * defMult;
 
-        ApplyTintColor(useTint, tintColor);
+        // ★ [추가] 최종 이동 속도 적용
+        this.moveSpeed = baseSpeed;
+
+        // 색상 적용 및 원본 색상 저장
+        if (useTint) originalTintColor = tintColor;
+        else originalTintColor = Color.white;
+
+        ApplyColor(originalTintColor);
     }
 
+    // --- 색상 변경 헬퍼 ---
+    private void ApplyColor(Color color)
+    {
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>();
+        if (renderers == null || renderers.Length == 0) return;
+        foreach (SpriteRenderer renderer in renderers)
+        {
+            renderer.color = color;
+        }
+    }
 
     // PlayerHealth에서 이 적의 공격력을 알 수 있도록 Getter 제공
     public float GetCurrentDamage()
@@ -81,13 +109,37 @@ public class EnemyBehavior : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        float finalDamage = Mathf.Max(1, damage - currentDefense);
+        // ★ [수정] 방어력 공식 변경 (최소 데미지 0.5)
+        // 기존: Mathf.Max(1, ...) -> 변경: 0.5
+        float finalDamage = damage - currentDefense;
+        if (finalDamage <= 0) finalDamage = 0.5f;
+
         currentHp -= finalDamage;
+
+        // ★ [추가] 피격 이펙트 재생
+        if (gameObject.activeInHierarchy)
+        {
+            if (flashCoroutine != null) StopCoroutine(flashCoroutine);
+            flashCoroutine = StartCoroutine(FlashRoutine());
+        }
 
         if (currentHp <= 0)
         {
             Die();
         }
+    }
+
+    // ★ [추가] 번쩍임 코루틴
+    IEnumerator FlashRoutine()
+    {
+        // 1. 피격 색상으로 변경
+        ApplyColor(hitColor);
+
+        // 2. 잠시 대기
+        yield return new WaitForSeconds(flashDuration);
+
+        // 3. 원래 색상(틴트 포함)으로 복구
+        ApplyColor(originalTintColor);
     }
 
     private void Die()

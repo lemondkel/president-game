@@ -261,6 +261,25 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public int getMaxHp()
+    {
+        if (player != null)
+        {
+            var hpComp = player.GetComponent<HealthSystemComponent>();
+            if (hpComp != null)
+            {
+                var hs = hpComp.GetHealthSystem();
+                return (int) hs.GetHealthMax();
+            } else
+            {
+                return 1;
+            }
+        }
+        else
+        {
+            return 1;
+        }
+    }
     public void SaveStageData()
     {
         if (accumulatedExpInStage <= 0) { }

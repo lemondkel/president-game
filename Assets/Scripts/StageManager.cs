@@ -81,6 +81,9 @@ public class StageManager : MonoBehaviour
     // ★ [추가] 스테이지 데이터 로드 완료 이벤트
     public event Action OnStageDataLoaded;
 
+    // ★ [추가] 중복 재시작 방지용 플래그
+    private bool isRestarting = false;
+
     void Awake()
     {
         if (Instance == null) Instance = this;
@@ -289,11 +292,13 @@ public class StageManager : MonoBehaviour
 
     public void RestartStage()
     {
+        if (isRestarting) return;
         StartCoroutine(RestartRoutine());
     }
 
     IEnumerator RestartRoutine()
     {
+        isRestarting = true; // 재시작 시작
         Debug.Log("💀 플레이어 사망! 스테이지를 재시작합니다.");
 
         if (GameManager.Instance != null)
@@ -339,11 +344,34 @@ public class StageManager : MonoBehaviour
 
         if (GameManager.Instance != null)
             GameManager.Instance.isPlayerDead = false;
+
+        isRestarting = false; // 재시작 로직종료
     }
 
     void SetPlayerControl(bool isActive)
     {
         if (playerTransform == null) return;
-        // 기존 컨트롤 제어 로직 유지...
+
+        // 1. 이동 및 애니메이션 스크립트 끄기
+        // (PlayerMovementAndAnimation 등 사용하시는 스크립트 이름을 넣으세요)
+        var movement = playerTransform.GetComponent<PlayerMovementAndAnimation>(); // 예시 이름
+        if (movement != null) movement.enabled = isActive;
+
+        // 2. 조준 및 발사 스크립트 끄기 (★ 이게 꺼져야 총알이 안 나감)
+        // (PlayerAimWeapon 등 사용하시는 스크립트 이름)
+        var aim = playerTransform.GetComponent<WeaponSystem>(); // 예시 이름
+        if (aim != null) aim.enabled = isActive;
+
+        // 3. 물리 연산 제어
+        var rb = playerTransform.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            if (!isActive) rb.velocity = Vector2.zero; // 즉시 정지
+            rb.simulated = isActive; // 물리 충돌 무시 여부
+        }
+
+        // 4. 충돌체(Collider) 제어 (선택사항: 죽어있는 동안 안 맞게)
+        var col = playerTransform.GetComponent<Collider2D>();
+        if (col != null) col.enabled = isActive;
     }
 }

@@ -202,7 +202,7 @@ public class ProfileManager : MonoBehaviour
         defenseInput.text = "방어력: " + data.defense.ToString("0");
         attackInput.text = "공격력: " + data.attack.ToString("0");
         speedInput.text = "이동 속도: " + data.moveSpeed.ToString("0") + "%";
-        hpRatioInput.text = "체력 재생률: " + data.hpRegen.ToString("0") + "%";
+        hpRatioInput.text = "체력 재생: " + data.hpRegen.ToString("0");
         skillReduceInput.text = "스킬 쿨타임: " + data.cooldownReduction.ToString("0") + "%";
         criticalInput.text = "치명타: " + data.critRate.ToString("0") + "%";
         lifeStealInput.text = "생명력 흡수: " + data.lifeSteal.ToString("0") + "%";

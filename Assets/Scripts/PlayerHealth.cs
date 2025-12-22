@@ -11,36 +11,78 @@ public class PlayerHealth : MonoBehaviour
     public TextMeshProUGUI hpText;
 
     [Header("Settings")]
-    public float hitCooldown = 0.5f; // 무적 시간
+    public float hitCooldown = 0.5f;
     private float lastHitTime;
+
+    private bool isDead = false;
+
+    // ★ [추가] 체력 재생용 타이머
+    private float regenTimer = 0f;
 
     void Start()
     {
         healthSystemComponent = GetComponent<HealthSystemComponent>();
-
         if (healthSystemComponent != null)
         {
-            // 이벤트 구독
             healthSystemComponent.GetHealthSystem().OnHealthChanged += PlayerHealth_OnHealthChanged;
             healthSystemComponent.GetHealthSystem().OnDead += PlayerHealth_OnDead;
-
-            UpdateText(); // 초기 갱신
+            UpdateText();
         }
     }
 
-    // 체력 변경 시 호출
-    private void PlayerHealth_OnHealthChanged(object sender, EventArgs e)
+    // ★ [추가] 매 프레임 체력 재생 체크
+    void Update()
     {
+        if (isDead) return; // 죽었으면 재생 안 함
+
+        HandleHpRegen();
+    }
+
+    void HandleHpRegen()
+    {
+        if (healthSystemComponent == null) return;
+
+        // PlayerStats가 없으면 기본값 0
+        float regenAmount = (PlayerStats.Instance != null) ? PlayerStats.Instance.hpRegen : 0f;
+
+        if (regenAmount <= 0) return;
+
+        // 1초마다 회복
+        regenTimer += Time.deltaTime;
+        if (regenTimer >= 1.0f)
+        {
+            healthSystemComponent.GetHealthSystem().Heal(regenAmount);
+            regenTimer = 0f; // 타이머 초기화 (또는 -= 1.0f 로 오차 보정 가능)
+        }
+    }
+
+    public void Revive()
+    {
+        isDead = false;
+        regenTimer = 0f; // 부활 시 타이머 리셋
         UpdateText();
     }
 
-    // 사망 시 호출
-    private void PlayerHealth_OnDead(object sender, EventArgs e)
+    private void PlayerHealth_OnHealthChanged(object sender, EventArgs e)
     {
-        if (StageManager.Instance != null) StageManager.Instance.RestartStage();
+        UpdateText();
+        if (isDead && healthSystemComponent.GetHealthSystem().GetHealth() > 0)
+        {
+            isDead = false;
+        }
     }
 
-    // 텍스트 갱신 로직
+    private void PlayerHealth_OnDead(object sender, EventArgs e)
+    {
+        if (isDead) return;
+        isDead = true;
+
+        if (StageManager.Instance != null)
+        {
+            StageManager.Instance.RestartStage();
+        }
+    }
+
     private void UpdateText()
     {
         if (hpText != null && healthSystemComponent != null)
@@ -51,61 +93,58 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    // ★ [핵심] 몬스터와 충돌 감지 (물리)
     private void OnCollisionStay2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Enemy"))
-        {
-            TryTakeDamageFrom(collision.gameObject);
-        }
+        if (isDead) return;
+        if (collision.gameObject.CompareTag("Enemy")) TryTakeDamageFrom(collision.gameObject);
     }
 
-    // ★ [핵심] 몬스터와 겹침 감지 (트리거)
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (collision.CompareTag("Enemy"))
-        {
-            TryTakeDamageFrom(collision.gameObject);
-        }
+        if (isDead) return;
+        if (collision.CompareTag("Enemy")) TryTakeDamageFrom(collision.gameObject);
     }
 
-    // 데미지 처리 공통 로직
     private void TryTakeDamageFrom(GameObject enemyObject)
     {
-        // 무적 시간 체크
         if (Time.time > lastHitTime + hitCooldown)
         {
-            // 1. 부딪힌 적의 스크립트 가져오기
             EnemyBehavior enemy = enemyObject.GetComponent<EnemyBehavior>();
+            float incomingDamage = 0f;
 
             if (enemy != null)
             {
-                // 2. 적의 실제 공격력 가져오기 (Initialize에서 계산된 값)
-                float damage = enemy.GetCurrentDamage();
-
-                // 0뎀이면 무시
-                if (damage > 0)
-                {
-                    TakeDamage(damage);
-                    // Debug.Log($"[피격] {enemy.name}에게 {damage} 데미지를 입었습니다.");
-                }
+                incomingDamage = enemy.GetCurrentDamage();
             }
             else
             {
-                // (비상용) EnemyBehavior가 없는 'Enemy' 태그라면 스테이지 기본 데미지 적용
                 if (StageManager.Instance != null && StageManager.Instance.currentStageData != null)
-                {
-                    TakeDamage(StageManager.Instance.currentStageData.damageMultiplier);
-                }
+                    incomingDamage = StageManager.Instance.currentStageData.damageMultiplier;
             }
 
-            // 맞은 시간 갱신
+            float playerDefense = 0f;
+            if (PlayerStats.Instance != null)
+            {
+                playerDefense = PlayerStats.Instance.defense;
+            }
+
+            float finalDamage = incomingDamage - playerDefense;
+
+            if (finalDamage <= 0) finalDamage = 0.5f;
+
+            if (finalDamage > 0)
+            {
+                TakeDamage(finalDamage);
+            }
+
             lastHitTime = Time.time;
         }
     }
 
     public void TakeDamage(float damageAmount)
     {
+        if (isDead) return;
+
         if (healthSystemComponent != null)
         {
             healthSystemComponent.GetHealthSystem().Damage(damageAmount);
