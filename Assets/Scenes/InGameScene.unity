@@ -5339,6 +5339,7 @@ MonoBehaviour:
   levelUpVfxPrefab: {fileID: 8771972552311404799, guid: cb934758544295d4c9366c3d0726021f,
     type: 3}
   player: {fileID: 1492442395}
+  profileDisplay: {fileID: 1045659845}
 --- !u!82 &1412463993
 AudioSource:
   m_ObjectHideFlags: 0
@@ -5808,7 +5809,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   data: {fileID: 11400000, guid: f79ae47eb7ab6344398fceb4ba87d994, type: 2}
   currentLevel: 0
-  currentCooldown: 5
+  baseCooldownPerLevel: 0
 --- !u!82 &1492442406
 AudioSource:
   m_ObjectHideFlags: 0
@@ -6880,7 +6881,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 5}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 200, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1748566941
 MonoBehaviour:
@@ -6938,7 +6939,7 @@ MonoBehaviour:
   m_fontSizeMax: 72
   m_fontStyle: 0
   m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
+  m_VerticalAlignment: 1024
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0

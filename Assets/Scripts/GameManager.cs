@@ -5,6 +5,8 @@ using UnityEngine.Networking;
 using CodeMonkey.HealthSystemCM;
 using FreewrokGame;
 using UnityEngine.UI; // Graphic, RawImage, Image 사용을 위해 추가
+using System.Collections.Generic; // Dictionary 사용을 위해 추가
+using UnityEngine.Networking;
 
 public class GameManager : MonoBehaviour
 {
@@ -46,6 +48,23 @@ public class GameManager : MonoBehaviour
     [Header("Profile Display")]
     // ★ Image와 RawImage 모두 할당 가능하도록 Graphic으로 변경
     public Graphic profileDisplay;
+
+    // 이번 스테이지에서 획득한 아이템 누적량 (로컬 버퍼)
+    private Dictionary<string, int> stageItemBuffer = new Dictionary<string, int>();
+
+    // ★ 아이템 저장을 위한 구조체 정의
+    [Serializable]
+    public class ItemSaveData
+    {
+        public string name;
+        public int count;
+    }
+
+    [Serializable]
+    public class ItemListWrapper
+    {
+        public List<ItemSaveData> items = new List<ItemSaveData>();
+    }
 
     [Serializable]
     public class ServerResponse
@@ -346,6 +365,15 @@ public class GameManager : MonoBehaviour
         form.AddField("charId", charId);
         form.AddField("gainedExp", amount);
 
+        // ★ [핵심] Dictionary를 Serializable 리스트로 변환 후 JSON 생성
+        ItemListWrapper wrapper = new ItemListWrapper();
+        foreach (var pair in stageItemBuffer)
+        {
+            wrapper.items.Add(new ItemSaveData { name = pair.Key, count = pair.Value });
+        }
+        string itemsJson = JsonUtility.ToJson(wrapper);
+        form.AddField("itemsJson", itemsJson);
+
         form.AddField("level", level);
         form.AddField("currentExp", currentExp);
         form.AddField("maxExp", maxExp);
@@ -385,15 +413,36 @@ public class GameManager : MonoBehaviour
             yield return www.SendWebRequest();
             if (www.result == UnityWebRequest.Result.Success)
             {
+                // 성공 시 버퍼 초기화
+                stageItemBuffer.Clear();
                 accumulatedExpInStage = 0;
-                Debug.Log("데이터 저장 완료 (Saved)");
+                Debug.Log("아이템 포함 데이터 저장 성공!");
             }
             else Debug.LogError($"저장 실패: {www.error}");
         }
     }
 
+    string ConvertBufferToJson()
+    {
+        if (stageItemBuffer.Count == 0) return "{}";
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.Append("{");
+        foreach (var item in stageItemBuffer)
+        {
+            sb.Append($"\"{item.Key}\":{item.Value},");
+        }
+        sb.Remove(sb.Length - 1, 1); // 마지막 콤마 제거
+        sb.Append("}");
+        return sb.ToString();
+    }
+
     public void ApplyItemEffect(ItemType type)
     {
+        // 1. 버퍼에 기록 (서버 저장용)
+        string typeName = type.ToString();
+        if (!stageItemBuffer.ContainsKey(typeName)) stageItemBuffer[typeName] = 0;
+        stageItemBuffer[typeName]++;
+
         if (audioSource != null && itemPickupClip != null)
         {
             audioSource.pitch = UnityEngine.Random.Range(0.95f, 1.05f);

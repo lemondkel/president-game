@@ -11,4 +11,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/ProfileScene.unity
     guid: 4e19214e4c441c143b5400894bb9cc9d
+  - enabled: 1
+    path: Assets/Scenes/SkillScene.unity
+    guid: af21231dcd8fea54ea2ee981dc73cc1c
+  - enabled: 1
+    path: Assets/Scenes/InventoryScene.unity
+    guid: c488bea5c6c490a49ba1d147a2b05bf1
   m_configObjects: {}
