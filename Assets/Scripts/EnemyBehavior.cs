@@ -1,17 +1,21 @@
 using UnityEngine;
-using System.Collections; // 코루틴 사용을 위해 추가
+using System.Collections;
+using CodeMonkey.HealthSystemCM; // HealthSystem 사용을 위해 추가
 
 public class EnemyBehavior : MonoBehaviour
 {
-    [Header("References")]
-    // public SpriteRenderer spriteRenderer; 
-
     [Header("Movement")]
     public float moveSpeed = 2.0f;
 
     [Header("Visual Effects")]
-    public Color hitColor = Color.red; // 피격 시 변할 색상 (흰색이나 빨간색 추천)
-    public float flashDuration = 0.1f; // 번쩍이는 시간
+    public Color hitColor = Color.red;
+    public Color critHitColor = Color.yellow; // 치명타 피격 색상
+    public float flashDuration = 0.1f;
+    public float critScaleMultiplier = 1.3f;  // 치명타 시 크기 확대 배율
+
+    [Header("Knockback Settings")]
+    public float knockbackForce = 5f;      // 밀려나는 힘
+    public float knockbackDuration = 0.2f; // 밀려나는 시간
 
     // 실제 런타임 스탯
     private float currentHp;
@@ -19,37 +23,35 @@ public class EnemyBehavior : MonoBehaviour
     private float currentDefense;
 
     private Transform target;
-    private EnemyData baseData; // 원본 데이터 참조 (null일 수 있음)
+    private EnemyData baseData;
 
-    // 원래 색상 저장용 (틴트 포함)
     private Color originalTintColor = Color.white;
+    private Vector3 originalScale;
     private Coroutine flashCoroutine;
+    private Coroutine knockbackCoroutine;
+
+    // 현재 넉백 중인지 여부
+    private bool isKnockingBack = false;
 
     public void Initialize(EnemyData data, Transform playerTransform, StageData stageInfo, bool useTint, Color tintColor)
     {
         target = playerTransform;
-        this.baseData = data; // 데이터 저장 (null일 수도 있음)
+        this.baseData = data;
+        this.originalScale = transform.localScale;
 
-        // ★ [수정] baseData에 직접 쓰는 게 아니라, 계산용 지역 변수를 사용합니다.
-        float baseHp = 1f;      // 기본 체력
-        float baseDamage = 1f;   // 기본 공격력
-        float baseDefense = 1f;  // 기본 방어력
-        float baseSpeed = 2.0f;  // ★ [추가] 기본 이동 속도
+        float baseHp = 1f;
+        float baseDamage = 1f;
+        float baseDefense = 1f;
+        float baseSpeed = 2.0f;
 
         if (data != null)
         {
-            // 데이터가 있으면 그 값을 사용
             baseHp = data.maxHp;
             baseDamage = data.attackPower;
             baseDefense = data.defense;
-            baseSpeed = data.moveSpeed; // ★ [추가] 데이터에서 이동 속도 가져옴
-        }
-        else
-        {
-            Debug.LogWarning($"[{gameObject.name}] EnemyData가 연결되지 않았습니다! 기본 HP(1)를 사용합니다.");
+            baseSpeed = data.moveSpeed;
         }
 
-        // 1. 스탯 계산 (기본값 * 스테이지 보정치)
         float hpMult = stageInfo ? stageInfo.hpMultiplier : 1f;
         float dmgMult = stageInfo ? stageInfo.damageMultiplier : 1f;
         float defMult = stageInfo ? stageInfo.defenseMultiplier : 1f;
@@ -57,18 +59,14 @@ public class EnemyBehavior : MonoBehaviour
         currentHp = baseHp * hpMult;
         currentDamage = baseDamage * dmgMult;
         currentDefense = baseDefense * defMult;
-
-        // ★ [추가] 최종 이동 속도 적용
         this.moveSpeed = baseSpeed;
 
-        // 색상 적용 및 원본 색상 저장
         if (useTint) originalTintColor = tintColor;
         else originalTintColor = Color.white;
 
         ApplyColor(originalTintColor);
     }
 
-    // --- 색상 변경 헬퍼 ---
     private void ApplyColor(Color color)
     {
         SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>();
@@ -79,92 +77,113 @@ public class EnemyBehavior : MonoBehaviour
         }
     }
 
-    // PlayerHealth에서 이 적의 공격력을 알 수 있도록 Getter 제공
-    public float GetCurrentDamage()
-    {
-        return currentDamage;
-    }
+    public float GetCurrentDamage() { return currentDamage; }
 
     private void Update()
     {
-        if (target != null)
+        if (target != null && !isKnockingBack)
         {
             Vector3 direction = (target.position - transform.position).normalized;
             transform.position += direction * moveSpeed * Time.deltaTime;
         }
     }
 
-    private void ApplyTintColor(bool useTint, Color tintColor)
+    private bool CheckCriticalHit()
     {
-        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>();
-
-        if (renderers == null || renderers.Length == 0) return;
-
-        foreach (SpriteRenderer renderer in renderers)
-        {
-            if (useTint) renderer.color = tintColor;
-            else renderer.color = Color.white;
-        }
+        if (PlayerStats.Instance == null) return false;
+        float critRate = PlayerStats.Instance.critRate;
+        return Random.Range(0f, 100f) < critRate;
     }
 
     public void TakeDamage(float damage)
     {
-        // ★ [수정] 방어력 공식 변경 (최소 데미지 0.5)
-        // 기존: Mathf.Max(1, ...) -> 변경: 0.5
-        float finalDamage = damage - currentDefense;
+        // 1. 치명타 여부 확인 및 데미지 계산
+        bool isCritical = CheckCriticalHit();
+        float incomingDamage = isCritical ? damage * 2f : damage;
+
+        // 2. 방어력 적용 최종 데미지
+        float finalDamage = incomingDamage - currentDefense;
         if (finalDamage <= 0) finalDamage = 0.5f;
 
         currentHp -= finalDamage;
 
-        // ★ [추가] 피격 이펙트 재생
+        // 3. 생명력 흡수 (Life Steal) 로직 실행
+        ExecuteLifeSteal(finalDamage);
+
+        // 4. 피격 이펙트
         if (gameObject.activeInHierarchy)
         {
             if (flashCoroutine != null) StopCoroutine(flashCoroutine);
-            flashCoroutine = StartCoroutine(FlashRoutine());
+            flashCoroutine = StartCoroutine(FlashRoutine(isCritical));
         }
 
-        if (currentHp <= 0)
+        if (currentHp <= 0) Die();
+    }
+
+    // --- 생명력 흡수 함수 분리 ---
+    private void ExecuteLifeSteal(float actualDamageDealt)
+    {
+        // PlayerStats와 GameManager가 존재하는지 확인
+        if (PlayerStats.Instance != null && PlayerStats.Instance.lifeSteal > 0)
         {
-            Die();
+            // 공식: 가한 데미지 * (생명력 흡수율 / 100)
+            float healAmount = actualDamageDealt * (PlayerStats.Instance.lifeSteal / 100f);
+
+            if (GameManager.Instance != null && GameManager.Instance.player != null)
+            {
+                var hpComp = GameManager.Instance.player.GetComponent<HealthSystemComponent>();
+                if (hpComp != null)
+                {
+                    // 플레이어 체력 회복
+                    hpComp.GetHealthSystem().Heal(healAmount);
+                    // Debug.Log($"[LifeSteal] {healAmount:F2} HP 회복됨 (데미지: {actualDamageDealt})");
+                }
+            }
         }
     }
 
-    // ★ [추가] 번쩍임 코루틴
-    IEnumerator FlashRoutine()
+    public void ApplyKnockback(Vector2 direction)
     {
-        // 1. 피격 색상으로 변경
-        ApplyColor(hitColor);
+        if (gameObject.activeInHierarchy)
+        {
+            if (knockbackCoroutine != null) StopCoroutine(knockbackCoroutine);
+            knockbackCoroutine = StartCoroutine(KnockbackRoutine(direction));
+        }
+    }
 
-        // 2. 잠시 대기
+    IEnumerator KnockbackRoutine(Vector2 direction)
+    {
+        isKnockingBack = true;
+        float timer = 0f;
+        while (timer < knockbackDuration)
+        {
+            transform.position += (Vector3)direction * knockbackForce * Time.deltaTime;
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        isKnockingBack = false;
+    }
+
+    IEnumerator FlashRoutine(bool isCritical)
+    {
+        Color targetFlashColor = isCritical ? critHitColor : hitColor;
+        ApplyColor(targetFlashColor);
+        if (isCritical) transform.localScale = originalScale * critScaleMultiplier;
         yield return new WaitForSeconds(flashDuration);
-
-        // 3. 원래 색상(틴트 포함)으로 복구
         ApplyColor(originalTintColor);
+        if (isCritical) transform.localScale = originalScale;
     }
 
     private void Die()
     {
-        // 1. 경험치 처리
         if (GameManager.Instance != null)
         {
-            // ★ [수정] baseData가 null일 경우 기본 경험치(1) 지급
             int exp = (baseData != null) ? baseData.expReward : 1;
             GameManager.Instance.AddExp(exp);
         }
-
-        // 2. 아이템 드랍
-        if (LootManager.Instance != null)
-        {
-            LootManager.Instance.SpawnLoot(transform.position);
-        }
-
-        // 3. 킬 카운트
-        if (StageManager.Instance != null)
-        {
-            StageManager.Instance.OnEnemyKilled();
-        }
-
-        // 4. 소멸
+        if (LootManager.Instance != null) LootManager.Instance.SpawnLoot(transform.position);
+        if (StageManager.Instance != null) StageManager.Instance.OnEnemyKilled();
+        transform.localScale = originalScale;
         Destroy(gameObject);
     }
 }

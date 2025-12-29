@@ -4,6 +4,8 @@ using System.Collections;
 using UnityEngine.Networking;
 using CodeMonkey.HealthSystemCM;
 using FreewrokGame;
+using UnityEngine.UI; // Graphic, RawImage, Image 사용을 위해 추가
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
@@ -41,6 +43,10 @@ public class GameManager : MonoBehaviour
     public GameObject levelUpVfxPrefab;
     public GameObject player;
 
+    [Header("Profile Display")]
+    // ★ Image와 RawImage 모두 할당 가능하도록 Graphic으로 변경
+    public Graphic profileDisplay;
+
     [Serializable]
     public class ServerResponse
     {
@@ -55,6 +61,9 @@ public class GameManager : MonoBehaviour
         public long gold;
         public long diamond;
         public int selectedCharId;
+        public string nickname;
+        public string profileImage; // ★ 서버에서 내려주는 이미지 경로 필드
+
         public int level;
         public int currentExp;
         public int maxExp;
@@ -106,8 +115,8 @@ public class GameManager : MonoBehaviour
 
             if (www.result == UnityWebRequest.Result.Success)
             {
-				string json = www.downloadHandler.text;
-				Debug.Log($"[Load] 서버 응답: {json}");
+                string json = www.downloadHandler.text;
+                Debug.Log($"[Load] 서버 응답: {json}");
                 try
                 {
                     ServerResponse response = JsonUtility.FromJson<ServerResponse>(json);
@@ -142,13 +151,22 @@ public class GameManager : MonoBehaviour
         this.level = data.level;
         this.currentExp = data.currentExp;
         this.currentStageNumber = data.stageNumber;
-        StageClearUI.Instance.ShowClearSequence(data.stageNumber - 1);
+
+        if (StageClearUI.Instance != null)
+            StageClearUI.Instance.ShowClearSequence(data.stageNumber - 1);
+
         this.maxExp = data.maxExp;
         this.currentGold = data.gold;
         this.currentDiamond = data.diamond;
         this.charId = data.selectedCharId;
 
-        // 2. StageManager 갱신 및 ★스테이지 로드 호출★
+        // ★ [프로필 조회 로직] 경로가 있다면 이미지를 다운로드해서 UI에 반영
+        if (profileDisplay != null && !string.IsNullOrEmpty(data.profileImage))
+        {
+            StartCoroutine(DownloadProfileImage(data.profileImage));
+        }
+
+        // 2. StageManager 갱신 및 스테이지 로드 호출
         if (StageManager.Instance != null)
         {
             int stageIndex = Mathf.Max(0, data.stageNumber - 1);
@@ -178,9 +196,7 @@ public class GameManager : MonoBehaviour
         PlayerMovementAndAnimation playerMovementAndAnimation = PlayerMovementAndAnimation.Instance;
         if (playerMovementAndAnimation != null)
         {
-            Debug.Log($"기존 스피드: {playerMovementAndAnimation.getSpeedWalk()}");
             playerMovementAndAnimation.setSpeedWalk(PlayerStats.Instance.moveSpeed);
-            Debug.Log($"TOBE 스피드: {playerMovementAndAnimation.getSpeedWalk()}");
         }
 
         Debug.Log($"[GameManager] 체력 갱신!");
@@ -197,7 +213,44 @@ public class GameManager : MonoBehaviour
             }
         }
         UpdateAllUI();
-        StageManager.Instance.UpdateRemainUI();
+        if (StageManager.Instance != null) StageManager.Instance.UpdateRemainUI();
+    }
+
+    // 서버 경로에서 이미지를 다운로드하여 UI 컴포넌트에 적용하는 코루틴
+    IEnumerator DownloadProfileImage(string relativeUrl)
+    {
+        string fullUrl = baseUrl + relativeUrl;
+
+        using (UnityWebRequest www = UnityWebRequestTexture.GetTexture(fullUrl))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                Texture2D texture = DownloadHandlerTexture.GetContent(www);
+
+                if (profileDisplay != null)
+                {
+                    // ★ 컴포넌트 타입에 따라 다르게 적용
+                    if (profileDisplay is RawImage rawImage)
+                    {
+                        rawImage.texture = texture;
+                    }
+                    else if (profileDisplay is Image image)
+                    {
+                        // Texture2D를 Sprite로 변환하여 적용
+                        Rect rect = new Rect(0, 0, texture.width, texture.height);
+                        image.sprite = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
+                    }
+
+                    Debug.Log("[GameManager] 프로필 이미지 조회 및 적용 성공");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[GameManager] 프로필 이미지 조회 실패: {www.error}");
+            }
+        }
     }
 
     public void UpdateAllUI()
@@ -269,8 +322,9 @@ public class GameManager : MonoBehaviour
             if (hpComp != null)
             {
                 var hs = hpComp.GetHealthSystem();
-                return (int) hs.GetHealthMax();
-            } else
+                return (int)hs.GetHealthMax();
+            }
+            else
             {
                 return 1;
             }
@@ -282,7 +336,6 @@ public class GameManager : MonoBehaviour
     }
     public void SaveStageData()
     {
-        if (accumulatedExpInStage <= 0) { }
         StartCoroutine(Co_RequestSaveStageData(accumulatedExpInStage));
     }
 

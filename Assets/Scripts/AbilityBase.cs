@@ -3,42 +3,38 @@ using UnityEngine;
 public abstract class AbilityBase : MonoBehaviour
 {
     [Header("Data")]
-    public AbilityData data; // 위에서 만든 데이터 연결
+    public AbilityData data;
 
     [Header("Current Status (Read Only)")]
     public int currentLevel = 0; // 0이면 미습득, 1부터 시작
-    public float currentCooldown;
+    public float baseCooldownPerLevel; // 레벨업으로 계산된 기본 쿨타임
     protected float timer;
 
-    // 외부에서 레벨업 시 호출
     public void LevelUp()
     {
         if (currentLevel < data.maxLevel)
         {
             currentLevel++;
-            // 레벨에 따른 스탯 재계산 (공식은 기획에 따라 변경 가능)
             RecalculateStats();
-
-            Debug.Log($"[{data.skillName}] Level Up! Lv.{currentLevel}");
+            Debug.Log($"[{data.skillName}] 레벨업! Lv.{currentLevel}");
         }
     }
 
     protected virtual void Start()
     {
-        // 시작 시 레벨 1로 초기화 (테스트용)
         if (currentLevel == 0) LevelUp();
         RecalculateStats();
     }
 
     protected virtual void Update()
     {
-        if (currentLevel == 0) return; // 배우지 않은 스킬은 동작 X
+        if (currentLevel == 0) return;
 
         timer += Time.deltaTime;
 
-        if (timer >= currentCooldown)
+        // ★ [수정] 실시간 쿨타임 감소 스탯 반영
+        if (timer >= GetFinalCooldown())
         {
-            // 자식 클래스에서 구현한 실제 스킬 로직 실행
             if (TryActivate())
             {
                 timer = 0f;
@@ -46,42 +42,55 @@ public abstract class AbilityBase : MonoBehaviour
         }
     }
 
-    // 스탯 계산 공식 (Base + (Level-1 * Growth))
+    // 레벨업 시에만 호출되는 기본 스탯 재계산
     protected void RecalculateStats()
     {
-        // 쿨타임 감소 공식 예시: 기본쿨 * (1 - (레벨 * 감소율))
-        currentCooldown = data.baseCooldown * (1f - ((currentLevel - 1) * data.cooldownReduction));
-        currentCooldown = Mathf.Max(0.1f, currentCooldown); // 최소 0.1초 제한
+        // 스킬 레벨에 따른 쿨타임 감소만 먼저 계산해 둡니다.
+        baseCooldownPerLevel = data.baseCooldown * (1f - ((currentLevel - 1) * data.cooldownReduction));
     }
 
-    // 현재 데미지 계산 함수 (자식들이 가져다 씀)
+    // ★ [추가] 플레이어 스탯(cooldownReduction)까지 합산한 최종 쿨타임 반환
+    public float GetFinalCooldown()
+    {
+        float statReduction = 0f;
+        if (PlayerStats.Instance != null)
+        {
+            // PlayerStats.Instance.cooldownReduction이 20이면 20% 감소
+            statReduction = PlayerStats.Instance.cooldownReduction / 100f;
+        }
+
+        // 공식: (레벨업 적용 쿨타임) * (1 - 스탯 감소율)
+        float finalCooldown = baseCooldownPerLevel * (1f - statReduction);
+
+        // 최소 0.1초 쿨타임 보장 (무한 연사 방지)
+        return Mathf.Max(0.1f, finalCooldown);
+    }
+
+    // 현재 데미지 계산 함수 (skillDamage 반영)
     public float GetCurrentDamage()
     {
-        return data.baseDamage + ((currentLevel - 1) * data.damageGrowth);
+        float skillBaseDamage = data.baseDamage + ((currentLevel - 1) * data.damageGrowth);
+        float multiplier = 1f;
+        if (PlayerStats.Instance != null)
+        {
+            multiplier += (PlayerStats.Instance.skillDamage / 100f);
+        }
+        return skillBaseDamage * multiplier;
     }
 
-    // 자식 클래스가 반드시 구현해야 하는 함수
     protected abstract bool TryActivate();
 
-    // 1. 현재 쿨타임 중인지 확인
-    public bool IsOnCooldown()
-    {
-        // 타이머가 0보다 크면 쿨타임 중
-        return timer > 0f;
-    }
+    public bool IsOnCooldown() => timer < GetFinalCooldown();
 
-    // 2. 남은 시간 비율 (0.0 ~ 1.0) 계산해서 반환
     public float GetCooldownRatio()
     {
-        if (currentCooldown <= 0f) return 0f; // 0으로 나누기 방지
-
-        // 남은 시간 / 전체 시간 = 비율 (예: 2초 남음 / 5초 전체 = 0.4)
-        return timer / currentCooldown;
+        float finalCooldown = GetFinalCooldown();
+        if (finalCooldown <= 0f) return 0f;
+        return Mathf.Clamp01(timer / finalCooldown);
     }
 
-    // 3. (옵션) 남은 시간 초 단위로 반환 (텍스트 표시용)
     public float GetRemainingTime()
     {
-        return Mathf.Max(0f, timer);
+        return Mathf.Max(0f, GetFinalCooldown() - timer);
     }
 }
