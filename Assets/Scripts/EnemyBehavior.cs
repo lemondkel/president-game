@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections;
-using CodeMonkey.HealthSystemCM; // HealthSystem 사용을 위해 추가
+using CodeMonkey.HealthSystemCM;
 
 public class EnemyBehavior : MonoBehaviour
 {
@@ -9,13 +9,13 @@ public class EnemyBehavior : MonoBehaviour
 
     [Header("Visual Effects")]
     public Color hitColor = Color.red;
-    public Color critHitColor = Color.yellow; // 치명타 피격 색상
+    public Color critHitColor = Color.yellow;
     public float flashDuration = 0.1f;
-    public float critScaleMultiplier = 1.3f;  // 치명타 시 크기 확대 배율
+    public float critScaleMultiplier = 1.3f;
 
     [Header("Knockback Settings")]
-    public float knockbackForce = 5f;      // 밀려나는 힘
-    public float knockbackDuration = 0.2f; // 밀려나는 시간
+    public float knockbackForce = 5f;
+    public float knockbackDuration = 0.2f;
 
     // 실제 런타임 스탯
     private float currentHp;
@@ -24,14 +24,20 @@ public class EnemyBehavior : MonoBehaviour
 
     private Transform target;
     private EnemyData baseData;
+    private Rigidbody2D rb; // ★ 물리 제어를 위한 컴포넌트
 
     private Color originalTintColor = Color.white;
     private Vector3 originalScale;
     private Coroutine flashCoroutine;
     private Coroutine knockbackCoroutine;
 
-    // 현재 넉백 중인지 여부
     private bool isKnockingBack = false;
+
+    private void Awake()
+    {
+        // ★ Rigidbody2D 컴포넌트 가져오기
+        rb = GetComponent<Rigidbody2D>();
+    }
 
     public void Initialize(EnemyData data, Transform playerTransform, StageData stageInfo, bool useTint, Color tintColor)
     {
@@ -81,6 +87,14 @@ public class EnemyBehavior : MonoBehaviour
 
     private void Update()
     {
+        // ★ [핵심 수정] 물리 엔진에 의한 미끄러짐 방지
+        // Transform으로 이동하므로, 충돌로 인해 생긴 물리 속도(Velocity)를 매 프레임 제거해야 함
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+        }
+
         if (target != null && !isKnockingBack)
         {
             Vector3 direction = (target.position - transform.position).normalized;
@@ -97,20 +111,16 @@ public class EnemyBehavior : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
-        // 1. 치명타 여부 확인 및 데미지 계산
         bool isCritical = CheckCriticalHit();
         float incomingDamage = isCritical ? damage * 2f : damage;
 
-        // 2. 방어력 적용 최종 데미지
         float finalDamage = incomingDamage - currentDefense;
         if (finalDamage <= 0) finalDamage = 0.5f;
 
         currentHp -= finalDamage;
 
-        // 3. 생명력 흡수 (Life Steal) 로직 실행
         ExecuteLifeSteal(finalDamage);
 
-        // 4. 피격 이펙트
         if (gameObject.activeInHierarchy)
         {
             if (flashCoroutine != null) StopCoroutine(flashCoroutine);
@@ -120,13 +130,10 @@ public class EnemyBehavior : MonoBehaviour
         if (currentHp <= 0) Die();
     }
 
-    // --- 생명력 흡수 함수 분리 ---
     private void ExecuteLifeSteal(float actualDamageDealt)
     {
-        // PlayerStats와 GameManager가 존재하는지 확인
         if (PlayerStats.Instance != null && PlayerStats.Instance.lifeSteal > 0)
         {
-            // 공식: 가한 데미지 * (생명력 흡수율 / 100)
             float healAmount = actualDamageDealt * (PlayerStats.Instance.lifeSteal / 100f);
 
             if (GameManager.Instance != null && GameManager.Instance.player != null)
@@ -134,9 +141,7 @@ public class EnemyBehavior : MonoBehaviour
                 var hpComp = GameManager.Instance.player.GetComponent<HealthSystemComponent>();
                 if (hpComp != null)
                 {
-                    // 플레이어 체력 회복
                     hpComp.GetHealthSystem().Heal(healAmount);
-                    // Debug.Log($"[LifeSteal] {healAmount:F2} HP 회복됨 (데미지: {actualDamageDealt})");
                 }
             }
         }
@@ -157,6 +162,7 @@ public class EnemyBehavior : MonoBehaviour
         float timer = 0f;
         while (timer < knockbackDuration)
         {
+            // ★ 넉백 시에도 Transform을 쓰므로, 물리 속도가 개입하지 않도록 주의
             transform.position += (Vector3)direction * knockbackForce * Time.deltaTime;
             timer += Time.deltaTime;
             yield return null;
