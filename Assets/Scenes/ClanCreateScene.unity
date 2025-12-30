@@ -644,7 +644,7 @@ GameObject:
   - component: {fileID: 144711736}
   - component: {fileID: 144711735}
   m_Layer: 5
-  m_Name: InputField (TMP)
+  m_Name: "\uAC80\uC0C9Input"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1458,7 +1458,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 267882974}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1874362542}
+        m_TargetAssemblyTypeName: NationCreator, Assembly-CSharp
+        m_MethodName: OnClickCreateNation
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &267882974
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3844,6 +3856,8 @@ Transform:
   - {fileID: 752133579}
   - {fileID: 67126349}
   - {fileID: 353948749}
+  - {fileID: 1874362541}
+  - {fileID: 1662931539}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &709394666
@@ -9456,6 +9470,54 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &1662931538
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1662931539}
+  - component: {fileID: 1662931540}
+  m_Layer: 0
+  m_Name: NationListManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1662931539
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1662931538}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 700588932}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1662931540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1662931538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3168b5d93783e7479d55b33cb3b08d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  contentArea: {fileID: 30901908}
+  nationItemPrefab: {fileID: 4548920557874337482, guid: 2b5d95609383ca0499a89d86740db680,
+    type: 3}
+  searchInput: {fileID: 144711735}
 --- !u!1 &1683324480
 GameObject:
   m_ObjectHideFlags: 0
@@ -10690,6 +10752,69 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2b5d95609383ca0499a89d86740db680, type: 3}
+--- !u!1 &1874362540
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1874362541}
+  - component: {fileID: 1874362542}
+  m_Layer: 0
+  m_Name: NationCreator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1874362541
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1874362540}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 700588932}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1874362542
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1874362540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d39a6884e07150f478b9f5bfe9dd1b54, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nameInput: {fileID: 788883967}
+  descInput: {fileID: 1526516167}
+  previewBase: {fileID: 1286185310}
+  previewSymbol: {fileID: 383499701}
+  baseSprites:
+  - {fileID: 21300000, guid: 9b518100700dd9a47af73bc23ea70341, type: 3}
+  - {fileID: 21300000, guid: 6652cac855244ff47838b9f180038f7e, type: 3}
+  - {fileID: 21300000, guid: 367e8c6329ed36b45b710a1c61be7b08, type: 3}
+  - {fileID: 21300000, guid: 13201d2969a6d9a46b4ae7fa4c2b67ef, type: 3}
+  symbolSprites:
+  - {fileID: 21300000, guid: 4fd484a7a963d6a4d919d28472ab7ff2, type: 3}
+  - {fileID: 21300000, guid: 977b257424a0b43458dd5ec4bf42bb54, type: 3}
+  - {fileID: 21300000, guid: 2653d26583f59fb49a5947d766ad9a9d, type: 3}
+  - {fileID: 21300000, guid: e33fc6d9e2226ef41b073a6e7209eefa, type: 3}
+  presetColors:
+  - {r: 1, g: 0.8254717, b: 0.8254717, a: 0}
+  - {r: 0.7877358, g: 0.80428475, b: 1, a: 0}
+  contentArea: {fileID: 0}
+  selectionBtnPrefab: {fileID: 0}
 --- !u!1 &1890375287
 GameObject:
   m_ObjectHideFlags: 0
