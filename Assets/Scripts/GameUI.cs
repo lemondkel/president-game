@@ -18,9 +18,6 @@ public class GameUI : MonoBehaviour
     [Header("��� UI")]
     public TextMeshProUGUI currentGoldText; // �� Gold Text
 
-    [Header("���̾� UI")]
-    public TextMeshProUGUI currentDiamondText; // �� Diamond Text
-
     [Header("Stage UI")]
     public TextMeshProUGUI currentStageText;
 
@@ -188,15 +185,6 @@ public class GameUI : MonoBehaviour
         {
             // �׳� val.ToString() ��� ������ �Լ� ȣ��
             currentGoldText.text = GetUnitNumber(val);
-        }
-    }
-
-    public void UpdateDiamondText(long val)
-    {
-        if (currentDiamondText != null)
-        {
-            // �׳� val.ToString() ��� ������ �Լ� ȣ��
-            currentDiamondText.text = GetUnitNumber(val);
         }
     }
 

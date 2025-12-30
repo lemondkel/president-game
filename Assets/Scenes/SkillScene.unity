@@ -1315,7 +1315,11 @@ MonoBehaviour:
   nickInput: {fileID: 0}
   stageInput: {fileID: 0}
   levelInput: {fileID: 0}
+  nicknameDisplay: {fileID: 0}
+  flagDisplay: {fileID: 0}
   profileDisplay: {fileID: 0}
+  nicknameInput: {fileID: 0}
+  countryCodeInput: {fileID: 0}
 --- !u!1 &700588931
 GameObject:
   m_ObjectHideFlags: 0
@@ -2216,7 +2220,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: ba6be562e2dacd24cb6d61ee36200b22, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2487,7 +2491,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.00003505092}
+  m_AnchoredPosition: {x: 0, y: 0.0002929515}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &1795458062
@@ -2930,7 +2934,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1795458063}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99998325
+  m_Size: 0.999523
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

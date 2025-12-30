@@ -278,7 +278,6 @@ public class GameManager : MonoBehaviour
         {
             GameUI.Instance.UpdateExpUI(currentExp, maxExp, level);
             GameUI.Instance.UpdateGoldText(currentGold);
-            GameUI.Instance.UpdateDiamondText(currentDiamond);
             GameUI.Instance.UpdateStageText(currentStageNumber);
         }
         NotifyExpChange();
@@ -460,7 +459,6 @@ public class GameManager : MonoBehaviour
                 break;
             case ItemType.Diamond:
                 currentDiamond += 1;
-                if (GameUI.Instance != null) GameUI.Instance.UpdateDiamondText(currentDiamond);
                 break;
             case ItemType.AttackSpeed: if (PlayerStats.Instance != null) PlayerStats.Instance.attackSpeed += 1; break;
             case ItemType.CritRate: if (PlayerStats.Instance != null) PlayerStats.Instance.critRate += 1; break;
