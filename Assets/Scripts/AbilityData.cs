@@ -10,11 +10,19 @@ public class AbilityData : ScriptableObject
 
     [Header("Base Stats (Level 1)")]
     public float baseDamage = 10f;
-    public float baseCooldown = 0.5f; // 평타는 0.5초, 궁극기는 60초
-    public float range = 10f;
-    public GameObject projectilePrefab; // 투사체나 이펙트
+    public float baseCooldown = 12f; // 조폭 소환 쿨타임 12초
+    public float mpCost = 50f;       // 소모 MP 50
+    public float range = 2f;         // 소환 범위 (본체 주변 1~2m)
+
+    [Header("Visuals & Projectiles")]
+    public GameObject projectilePrefab; // ★ 메테오 폭발 이펙트 등을 위해 필요
+
+    [Header("Summon Specifics")]
+    public GameObject summonPrefab;  // 소환할 조폭 프리팹
+    public int maxUnitCount = 6;     // 최대 유지 가능 수 (2그룹 = 6명)
+    public int unitsPerCast = 3;     // 한 번 시전 당 소환 수 (1그룹)
 
     [Header("Growth Stats (Per Level)")]
-    public float damageGrowth = 2f;   // 레벨업당 데미지 +2
-    public float cooldownReduction = 0.05f; // 레벨업당 쿨타임 5% 감소
+    public float damageGrowth = 0f;       // 소환수는 본체 스탯 비례라 고정값 성장은 0일 수도 있음
+    public float cooldownReduction = 0.05f;
 }

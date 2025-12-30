@@ -7,6 +7,10 @@ public class EnemyBehavior : MonoBehaviour
     [Header("Movement")]
     public float moveSpeed = 2.0f;
 
+    [Header("Combat")]
+    public float attackDamage = 10f; // ★ 적의 공격력 (조폭이 맞을 때 필요)
+    public float attackInterval = 1.0f; // 공격 주기
+
     [Header("Visual Effects")]
     public Color hitColor = Color.red;
     public Color critHitColor = Color.yellow;
@@ -22,9 +26,9 @@ public class EnemyBehavior : MonoBehaviour
     private float currentDamage;
     private float currentDefense;
 
-    private Transform target;
+    private Transform target; // 현재 추적 중인 대상 (본체 or 조폭)
     private EnemyData baseData;
-    private Rigidbody2D rb; // ★ 물리 제어를 위한 컴포넌트
+    private Rigidbody2D rb;
 
     private Color originalTintColor = Color.white;
     private Vector3 originalScale;
@@ -32,15 +36,16 @@ public class EnemyBehavior : MonoBehaviour
     private Coroutine knockbackCoroutine;
 
     private bool isKnockingBack = false;
+    private float lastAttackTime; // 공격 타이머
 
     private void Awake()
     {
-        // ★ Rigidbody2D 컴포넌트 가져오기
         rb = GetComponent<Rigidbody2D>();
     }
 
     public void Initialize(EnemyData data, Transform playerTransform, StageData stageInfo, bool useTint, Color tintColor)
     {
+        // 초기 타겟은 플레이어 본체
         target = playerTransform;
         this.baseData = data;
         this.originalScale = transform.localScale;
@@ -66,11 +71,51 @@ public class EnemyBehavior : MonoBehaviour
         currentDamage = baseDamage * dmgMult;
         currentDefense = baseDefense * defMult;
         this.moveSpeed = baseSpeed;
+        this.attackDamage = currentDamage; // 공격력 설정
 
         if (useTint) originalTintColor = tintColor;
         else originalTintColor = Color.white;
 
         ApplyColor(originalTintColor);
+
+        // ★ [핵심] 주기적으로 가장 가까운 타겟(조폭 포함) 탐색 시작
+        StartCoroutine(UpdateTargetRoutine());
+    }
+
+    // ★ [타겟 변경 AI] 0.5초마다 가장 가까운 'Player' 태그 찾기
+    IEnumerator UpdateTargetRoutine()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(0.5f);
+            FindClosestTarget();
+        }
+    }
+
+    void FindClosestTarget()
+    {
+        // 1. 씬 내의 모든 'Player' 태그 오브젝트 찾기 (본체 + 조폭)
+        GameObject[] potentialTargets = GameObject.FindGameObjectsWithTag("Player");
+
+        float closestDist = float.MaxValue;
+        Transform bestTarget = null;
+
+        foreach (GameObject t in potentialTargets)
+        {
+            if (!t.activeInHierarchy) continue;
+
+            float dist = Vector2.Distance(transform.position, t.transform.position);
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                bestTarget = t.transform;
+            }
+        }
+
+        if (bestTarget != null)
+        {
+            target = bestTarget;
+        }
     }
 
     private void ApplyColor(Color color)
@@ -87,8 +132,6 @@ public class EnemyBehavior : MonoBehaviour
 
     private void Update()
     {
-        // ★ [핵심 수정] 물리 엔진에 의한 미끄러짐 방지
-        // Transform으로 이동하므로, 충돌로 인해 생긴 물리 속도(Velocity)를 매 프레임 제거해야 함
         if (rb != null)
         {
             rb.velocity = Vector2.zero;
@@ -97,8 +140,36 @@ public class EnemyBehavior : MonoBehaviour
 
         if (target != null && !isKnockingBack)
         {
+            // 이동 로직
             Vector3 direction = (target.position - transform.position).normalized;
             transform.position += direction * moveSpeed * Time.deltaTime;
+        }
+    }
+
+    // ★ [충돌 공격] 조폭이나 플레이어와 부딪히면 데미지 주기
+    private void OnCollisionStay2D(Collision2D collision)
+    {
+        // 쿨타임 체크
+        if (Time.time < lastAttackTime + attackInterval) return;
+
+        if (collision.gameObject.CompareTag("Player"))
+        {
+            // 1. 조폭(GangUnit)인 경우
+            GangUnit gang = collision.gameObject.GetComponent<GangUnit>();
+            if (gang != null)
+            {
+                gang.TakeDamage(currentDamage);
+                lastAttackTime = Time.time;
+                return;
+            }
+
+            // 2. 플레이어 본체인 경우 (HealthSystemComponent 사용 시)
+            var healthComp = collision.gameObject.GetComponent<HealthSystemComponent>();
+            if (healthComp != null)
+            {
+                healthComp.GetHealthSystem().Damage(currentDamage);
+                lastAttackTime = Time.time;
+            }
         }
     }
 
@@ -162,7 +233,6 @@ public class EnemyBehavior : MonoBehaviour
         float timer = 0f;
         while (timer < knockbackDuration)
         {
-            // ★ 넉백 시에도 Transform을 쓰므로, 물리 속도가 개입하지 않도록 주의
             transform.position += (Vector3)direction * knockbackForce * Time.deltaTime;
             timer += Time.deltaTime;
             yield return null;

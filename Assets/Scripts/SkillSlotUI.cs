@@ -1,36 +1,51 @@
 using UnityEngine;
-using UnityEngine.UI; // ★ UI 관련 기능 필수
-using TMPro; // 텍스트도 쓸 거면 필수
+using UnityEngine.UI;
 
 public class SkillSlotUI : MonoBehaviour
 {
     [Header("UI References")]
-    public Image cooldownOverlayImage;  // 아까 만든 반투명 이미지
+    public Image iconImage;             // 스킬 아이콘 표시용
+    public Image cooldownOverlayImage;  // 쿨타임 반투명 이미지
 
-    [Header("Linked Ability")]
-    // 이 슬롯이 보여줄 실제 스킬 스크립트 연결
-    public AbilityBase linkedAbility;
+    // private으로 변경하여 인스펙터 실수를 방지
+    private AbilityBase linkedAbility;
+
+    // ★ 외부에서 스킬을 꽂아주는 함수
+    public void SetAbility(AbilityBase ability)
+    {
+        this.linkedAbility = ability;
+
+        // 아이콘 설정 (데이터에 아이콘이 있다면)
+        if (ability != null && ability.data != null && iconImage != null)
+        {
+            iconImage.sprite = ability.data.icon;
+            iconImage.enabled = true; // 아이콘 보이게
+        }
+        else if (iconImage != null)
+        {
+            // 스킬이 없거나 아이콘이 없으면 투명하게 처리
+            iconImage.enabled = false;
+        }
+    }
 
     void Update()
     {
-        // 연결된 스킬이 없으면 아무것도 안 함
         if (linkedAbility == null)
         {
-            cooldownOverlayImage.fillAmount = 0f;
+            if (cooldownOverlayImage != null) cooldownOverlayImage.fillAmount = 0f;
             return;
         }
 
-        // 스킬이 쿨타임 중인지 확인
-        if (linkedAbility.IsOnCooldown())
+        if (cooldownOverlayImage != null)
         {
-            // 1. 오버레이 이미지 채우기 (비율에 맞춰서)
-            // 쿨타임이 꽉 차서 시작 -> 점점 줄어듦 (1.0 -> 0.0)
-            cooldownOverlayImage.fillAmount = linkedAbility.GetCooldownRatio();
-        }
-        else
-        {
-            // 쿨타임이 끝났으면 오버레이를 걷어냄
-            cooldownOverlayImage.fillAmount = 0f;
+            if (linkedAbility.IsOnCooldown())
+            {
+                cooldownOverlayImage.fillAmount = linkedAbility.GetCooldownRatio();
+            }
+            else
+            {
+                cooldownOverlayImage.fillAmount = 0f;
+            }
         }
     }
 }

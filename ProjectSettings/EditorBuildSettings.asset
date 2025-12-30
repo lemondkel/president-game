@@ -18,9 +18,6 @@ EditorBuildSettings:
     path: Assets/Scenes/InventoryScene.unity
     guid: c488bea5c6c490a49ba1d147a2b05bf1
   - enabled: 1
-    path: Assets/Scenes/ClanScene.unity
-    guid: 062f7d7335a98524a9ad667470d7d8aa
-  - enabled: 1
     path: Assets/Scenes/WarScene.unity
     guid: f661b9a4dc304cc40a5ead4dcc3aa286
   - enabled: 1
